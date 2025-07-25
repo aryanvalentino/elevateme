@@ -133,9 +133,9 @@ export const HabitTracker = () => {
               </div>
               
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <Flame className="h-3 w-3" />
-                  {habit.streak} day streak
+                <Badge variant="secondary" className="flex items-center gap-0.5 text-xs px-2 py-0.5">
+                  <Flame className="h-2.5 w-2.5" />
+                  {habit.streak}d
                 </Badge>
                 <Button
                   variant="ghost"
