@@ -5,7 +5,7 @@ import { HabitTracker } from '@/components/HabitTracker';
 import { TimetableCreator } from '@/components/TimetableCreator';
 import { Journal } from '@/components/Journal';
 import { Target, Clock, BookOpen, TrendingUp } from 'lucide-react';
-import heroImage from '@/assets/hero-image.jpg';
+
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('habits');
@@ -13,12 +13,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="relative h-64 bg-gradient-primary overflow-hidden">
-        <img 
-          src={heroImage} 
-          alt="ElevateMe Hero" 
-          className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30"
-        />
+      <div className="relative h-64 bg-gradient-to-br from-purple-600 to-purple-800 overflow-hidden">
         <div className="relative z-10 flex items-center justify-center h-full text-center px-4">
           <div className="text-primary-foreground">
             <h1 className="text-4xl md:text-5xl font-bold mb-2">ElevateMe</h1>
