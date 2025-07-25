@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Check, Flame } from 'lucide-react';
+import { Plus, Check, Flame, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Habit {
@@ -75,6 +75,18 @@ export const HabitTracker = () => {
     }
   };
 
+  const deleteHabit = (id: string) => {
+    const habit = habits.find(h => h.id === id);
+    setHabits(prev => prev.filter(h => h.id !== id));
+    
+    if (habit) {
+      toast({
+        title: "Habit Deleted",
+        description: `"${habit.name}" has been removed from your habits.`,
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card className="bg-gradient-card shadow-card-shadow">
@@ -125,6 +137,14 @@ export const HabitTracker = () => {
                   <Flame className="h-3 w-3" />
                   {habit.streak} day streak
                 </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => deleteHabit(habit.id)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>
