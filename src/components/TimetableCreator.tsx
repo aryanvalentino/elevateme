@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Clock, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -14,7 +15,9 @@ interface TimeSlot {
 
 export const TimetableCreator = () => {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-  const [newTime, setNewTime] = useState('');
+  const [hour, setHour] = useState('');
+  const [minute, setMinute] = useState('');
+  const [period, setPeriod] = useState('');
   const [newActivity, setNewActivity] = useState('');
   const { toast } = useToast();
 
@@ -30,29 +33,32 @@ export const TimetableCreator = () => {
   }, [timeSlots]);
 
   const addTimeSlot = () => {
-    if (!newTime.trim() || !newActivity.trim()) {
+    if (!hour || !minute || !period || !newActivity.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please enter both time and activity.",
+        description: "Please enter time and activity.",
         variant: "destructive",
       });
       return;
     }
 
+    const formattedTime = `${hour}:${minute} ${period}`;
     const timeSlot: TimeSlot = {
       id: Date.now().toString(),
-      time: newTime,
+      time: formattedTime,
       activity: newActivity.trim(),
     };
 
     const updatedSlots = [...timeSlots, timeSlot].sort((a, b) => a.time.localeCompare(b.time));
     setTimeSlots(updatedSlots);
-    setNewTime('');
+    setHour('');
+    setMinute('');
+    setPeriod('');
     setNewActivity('');
     
     toast({
       title: "Time Slot Added!",
-      description: `${newTime} - ${newActivity} has been added to your timetable.`,
+      description: `${formattedTime} - ${newActivity} has been added to your timetable.`,
     });
   };
 
@@ -86,13 +92,43 @@ export const TimetableCreator = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <Input
-              type="time"
-              value={newTime}
-              onChange={(e) => setNewTime(e.target.value)}
-              placeholder="Select time"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+            <Select value={hour} onValueChange={setHour}>
+              <SelectTrigger>
+                <SelectValue placeholder="Hour" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                  <SelectItem key={h} value={h.toString().padStart(2, '0')}>
+                    {h.toString().padStart(2, '0')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={minute} onValueChange={setMinute}>
+              <SelectTrigger>
+                <SelectValue placeholder="Min" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 60 }, (_, i) => i).map((m) => (
+                  <SelectItem key={m} value={m.toString().padStart(2, '0')}>
+                    {m.toString().padStart(2, '0')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger>
+                <SelectValue placeholder="AM/PM" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="AM">AM</SelectItem>
+                <SelectItem value="PM">PM</SelectItem>
+              </SelectContent>
+            </Select>
+            
             <Input
               placeholder="Enter activity..."
               value={newActivity}
