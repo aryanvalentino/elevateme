@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { HabitTracker } from '@/components/HabitTracker';
 import { TimetableCreator } from '@/components/TimetableCreator';
 import { Journal } from '@/components/Journal';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Target, Clock, BookOpen, TrendingUp } from 'lucide-react';
 
 
@@ -14,6 +15,9 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="relative h-64 bg-gradient-to-br from-purple-600 to-purple-800 overflow-hidden">
+        <div className="absolute top-4 right-4 z-20">
+          <ThemeToggle />
+        </div>
         <div className="relative z-10 flex items-center justify-center h-full text-center px-4">
           <div className="text-primary-foreground">
             <h1 className="text-4xl md:text-5xl font-bold mb-2">ElevateMe</h1>
