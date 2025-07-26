@@ -24,8 +24,22 @@ export const TimetableCreator = () => {
 
   useEffect(() => {
     const savedTimeSlots = localStorage.getItem('elevateMe-timetable');
+    const lastResetDate = localStorage.getItem('elevateMe-timetable-lastReset');
+    const today = new Date().toDateString();
+
     if (savedTimeSlots) {
-      setTimeSlots(JSON.parse(savedTimeSlots));
+      const slots = JSON.parse(savedTimeSlots);
+      
+      // Reset completions if it's a new day
+      if (lastResetDate !== today) {
+        const resetSlots = slots.map((slot: TimeSlot) => ({ ...slot, completed: false }));
+        setTimeSlots(resetSlots);
+        localStorage.setItem('elevateMe-timetable-lastReset', today);
+      } else {
+        setTimeSlots(slots);
+      }
+    } else {
+      localStorage.setItem('elevateMe-timetable-lastReset', today);
     }
   }, []);
 
