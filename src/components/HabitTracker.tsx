@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Flame, Target, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -261,23 +261,29 @@ export const HabitTracker = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Add New Habit</CardTitle>
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 max-w-6xl mx-auto">
+      <Card className="bg-gradient-card shadow-card-shadow animate-fade-in">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary" />
+            <CardTitle className="text-lg sm:text-xl">Add New Habit</CardTitle>
+          </div>
           <CardDescription>Track your daily habits and build lasting routines</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Input
               type="text"
               placeholder="Enter habit name..."
               value={newHabitName}
               onChange={(e) => setNewHabitName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addHabit()}
-              className="flex-1"
+              className="flex-1 h-11 text-base"
             />
-            <Button onClick={addHabit} className="shrink-0">
+            <Button 
+              onClick={addHabit} 
+              className="bg-gradient-primary hover:opacity-90 transition-all duration-200 h-11 px-6 shrink-0"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Add Habit
             </Button>
@@ -285,44 +291,88 @@ export const HabitTracker = () => {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {habits.length === 0 ? (
-          <Card className="col-span-full">
-            <CardContent className="flex items-center justify-center py-12">
-              <p className="text-muted-foreground">No habits added yet. Start by adding your first habit!</p>
+          <Card className="col-span-full bg-gradient-card shadow-card-shadow animate-fade-in">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <Target className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
+              <p className="text-muted-foreground text-base">No habits added yet.</p>
+              <p className="text-muted-foreground text-sm mt-1">Start by adding your first habit above!</p>
             </CardContent>
           </Card>
         ) : (
-          habits.map((habit) => (
-            <Card key={habit.id} className={`relative ${habit.completed_today ? 'ring-2 ring-green-500' : ''}`}>
+          habits.map((habit, index) => (
+            <Card 
+              key={habit.id} 
+              className={`relative bg-gradient-card shadow-card-shadow hover:shadow-elevation transition-all duration-300 animate-fade-in ${
+                habit.completed_today ? 'ring-2 ring-success/50 bg-success/5' : ''
+              }`}
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg">{habit.name}</CardTitle>
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {habit.completed_today ? (
+                      <div className="flex-shrink-0 w-6 h-6 bg-success rounded-full flex items-center justify-center">
+                        <span className="text-success-foreground text-xs font-bold">✓</span>
+                      </div>
+                    ) : (
+                      <div className="flex-shrink-0 w-6 h-6 border-2 border-muted rounded-full" />
+                    )}
+                    <CardTitle className="text-base sm:text-lg truncate pr-2">{habit.name}</CardTitle>
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => deleteHabit(habit.id)}
-                    className="text-destructive hover:text-destructive"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors duration-200 flex-shrink-0 h-8 w-8 p-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Current Streak</span>
-                    <span className="text-2xl font-bold text-primary">{habit.streak}</span>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-center p-3 bg-background/50 rounded-lg">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <Flame className="w-4 h-4 text-orange-500" />
+                      <span className="text-xs font-medium text-muted-foreground">Streak</span>
+                    </div>
+                    <span className="text-xl font-bold text-primary">{habit.streak}</span>
                   </div>
                   
-                  <Button
-                    onClick={() => toggleHabit(habit.id)}
-                    variant={habit.completed_today ? "default" : "outline"}
-                    className="w-full"
-                  >
-                    {habit.completed_today ? "✓ Completed Today" : "Mark Complete"}
-                  </Button>
+                  <div className="text-center p-3 bg-background/50 rounded-lg">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <Calendar className="w-4 h-4 text-blue-500" />
+                      <span className="text-xs font-medium text-muted-foreground">Today</span>
+                    </div>
+                    <span className={`text-xl font-bold ${habit.completed_today ? 'text-success' : 'text-muted-foreground'}`}>
+                      {habit.completed_today ? '✓' : '○'}
+                    </span>
+                  </div>
                 </div>
+                
+                <Button
+                  onClick={() => toggleHabit(habit.id)}
+                  variant={habit.completed_today ? "default" : "outline"}
+                  className={`w-full h-11 text-base font-medium transition-all duration-200 ${
+                    habit.completed_today 
+                      ? 'bg-success hover:bg-success/80 text-success-foreground' 
+                      : 'hover:bg-primary hover:text-primary-foreground'
+                  }`}
+                >
+                  {habit.completed_today ? (
+                    <>
+                      <span className="mr-2">✓</span>
+                      Completed Today
+                    </>
+                  ) : (
+                    <>
+                      <Target className="w-4 h-4 mr-2" />
+                      Mark Complete
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           ))
