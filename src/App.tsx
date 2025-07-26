@@ -12,7 +12,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isGuest } = useAuth();
   
   if (loading) {
     return (
@@ -22,7 +22,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
   
-  if (!user) {
+  if (!user && !isGuest) {
     return <Navigate to="/auth" replace />;
   }
   
@@ -30,7 +30,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AuthRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isGuest } = useAuth();
   
   if (loading) {
     return (
@@ -40,7 +40,7 @@ const AuthRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
   
-  if (user) {
+  if (user || isGuest) {
     return <Navigate to="/" replace />;
   }
   
