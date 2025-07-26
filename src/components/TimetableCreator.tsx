@@ -4,13 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Clock, Trash2 } from 'lucide-react';
+import { Plus, Clock, Trash2, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface TimeSlot {
   id: string;
   time: string;
   activity: string;
+  completed?: boolean;
 }
 
 export const TimetableCreator = () => {
@@ -68,6 +69,21 @@ export const TimetableCreator = () => {
       title: "Time Slot Removed",
       description: "The time slot has been removed from your timetable.",
     });
+  };
+
+  const toggleCompletion = (id: string) => {
+    setTimeSlots(prev => prev.map(slot => 
+      slot.id === id ? { ...slot, completed: !slot.completed } : slot
+    ));
+    
+    const slot = timeSlots.find(s => s.id === id);
+    if (slot) {
+      toast({
+        title: slot.completed ? "Task Unmarked" : "Task Completed!",
+        description: `${slot.activity} has been ${slot.completed ? 'unmarked' : 'marked as complete'}.`,
+        variant: slot.completed ? "default" : "default",
+      });
+    }
   };
 
   const getCurrentTimeSlot = () => {
@@ -161,23 +177,40 @@ export const TimetableCreator = () => {
       <div className="space-y-3">
         <h3 className="text-lg font-semibold">Today's Schedule</h3>
         {timeSlots.map((slot) => (
-          <Card key={slot.id} className="bg-gradient-card shadow-card-shadow hover:shadow-elevation transition-all duration-200">
+          <Card key={slot.id} className={`bg-gradient-card shadow-card-shadow hover:shadow-elevation transition-all duration-200 ${slot.completed ? 'opacity-60' : ''}`}>
             <CardContent className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <Badge variant="outline" className="font-mono">
                   {slot.time}
                 </Badge>
-                <span className="font-medium">{slot.activity}</span>
+                <span className={`font-medium ${slot.completed ? 'line-through text-muted-foreground' : ''}`}>
+                  {slot.activity}
+                </span>
+                {slot.completed && (
+                  <Badge variant="secondary" className="bg-success text-success-foreground">
+                    Completed
+                  </Badge>
+                )}
               </div>
               
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeTimeSlot(slot.id)}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={slot.completed ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleCompletion(slot.id)}
+                  className={slot.completed ? "bg-success hover:bg-success/80" : ""}
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeTimeSlot(slot.id)}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
