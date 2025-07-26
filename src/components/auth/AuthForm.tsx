@@ -19,46 +19,68 @@ export const AuthForm = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Sign up attempt started', { email, password: password ? '***' : 'empty' });
     setLoading(true);
     setError('');
 
     const redirectUrl = `${window.location.origin}/`;
+    console.log('Redirect URL:', redirectUrl);
     
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
+      });
+
+      console.log('Sign up result:', error ? 'Error' : 'Success', error?.message);
+
+      if (error) {
+        setError(error.message);
+        console.error('Sign up error:', error);
+      } else {
+        toast({
+          title: "Check your email",
+          description: "We've sent you a confirmation link to complete your signup.",
+        });
+        console.log('Sign up successful, email sent');
       }
-    });
+    } catch (err) {
+      console.error('Unexpected error during sign up:', err);
+      setError('An unexpected error occurred');
+    }
 
     setLoading(false);
-
-    if (error) {
-      setError(error.message);
-    } else {
-      toast({
-        title: "Check your email",
-        description: "We've sent you a confirmation link to complete your signup.",
-      });
-    }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Sign in attempt started', { email, password: password ? '***' : 'empty' });
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      console.log('Sign in result:', error ? 'Error' : 'Success', error?.message);
+
+      if (error) {
+        setError(error.message);
+        console.error('Sign in error:', error);
+      } else {
+        console.log('Sign in successful');
+      }
+    } catch (err) {
+      console.error('Unexpected error during sign in:', err);
+      setError('An unexpected error occurred');
+    }
 
     setLoading(false);
-
-    if (error) {
-      setError(error.message);
-    }
   };
 
 
