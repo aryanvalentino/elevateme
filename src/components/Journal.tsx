@@ -5,9 +5,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface JournalEntry {
   id: string;
+  user_id: string;
   date: string;
   content: string;
   mood?: string;
@@ -17,7 +20,9 @@ export const Journal = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [newEntry, setNewEntry] = useState('');
   const [selectedMood, setSelectedMood] = useState('');
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user, isGuest } = useAuth();
 
   const moods = [
     { emoji: '😊', label: 'Happy' },
@@ -29,17 +34,45 @@ export const Journal = () => {
   ];
 
   useEffect(() => {
-    const savedEntries = localStorage.getItem('elevateMe-journal');
-    if (savedEntries) {
-      setEntries(JSON.parse(savedEntries));
+    if (isGuest) {
+      const savedEntries = localStorage.getItem('elevateMe-journal');
+      if (savedEntries) {
+        setEntries(JSON.parse(savedEntries));
+      }
+      setLoading(false);
+    } else if (user) {
+      loadEntries();
     }
-  }, []);
+  }, [user, isGuest]);
 
   useEffect(() => {
-    localStorage.setItem('elevateMe-journal', JSON.stringify(entries));
-  }, [entries]);
+    if (isGuest) {
+      localStorage.setItem('elevateMe-journal', JSON.stringify(entries));
+    }
+  }, [entries, isGuest]);
 
-  const addEntry = () => {
+  const loadEntries = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('journal_entries')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      setEntries(data || []);
+    } catch (error) {
+      console.error('Error loading journal entries:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load journal entries",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addEntry = async () => {
     if (!newEntry.trim()) {
       toast({
         title: "Empty Entry",
@@ -49,47 +82,109 @@ export const Journal = () => {
       return;
     }
 
-    const entry: JournalEntry = {
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      }),
-      content: newEntry.trim(),
-      mood: selectedMood,
-    };
+    const today = new Date().toISOString().split('T')[0];
 
-    setEntries([entry, ...entries]);
-    setNewEntry('');
-    setSelectedMood('');
-    
-    toast({
-      title: "Journal Entry Added!",
-      description: "Your thoughts have been saved to your journal.",
-    });
+    if (isGuest) {
+      const entry: JournalEntry = {
+        id: Date.now().toString(),
+        user_id: 'guest',
+        date: new Date().toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        content: newEntry.trim(),
+        mood: selectedMood,
+      };
+
+      setEntries([entry, ...entries]);
+      setNewEntry('');
+      setSelectedMood('');
+      
+      toast({
+        title: "Journal Entry Added!",
+        description: "Your thoughts have been saved to your journal.",
+      });
+      return;
+    }
+
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('journal_entries')
+        .insert([
+          {
+            user_id: user.id,
+            date: today,
+            content: newEntry.trim(),
+            mood: selectedMood || null,
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setEntries([data, ...entries]);
+      setNewEntry('');
+      setSelectedMood('');
+      
+      toast({
+        title: "Journal Entry Added!",
+        description: "Your thoughts have been saved to your journal.",
+      });
+    } catch (error) {
+      console.error('Error adding journal entry:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add journal entry",
+        variant: "destructive",
+      });
+    }
   };
 
-  const removeEntry = (id: string) => {
-    setEntries(prev => prev.filter(entry => entry.id !== id));
-    toast({
-      title: "Entry Removed",
-      description: "The journal entry has been deleted.",
-    });
+  const removeEntry = async (id: string) => {
+    if (isGuest) {
+      setEntries(prev => prev.filter(entry => entry.id !== id));
+      toast({
+        title: "Entry Removed",
+        description: "The journal entry has been deleted.",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('journal_entries')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setEntries(prev => prev.filter(entry => entry.id !== id));
+      toast({
+        title: "Entry Removed",
+        description: "The journal entry has been deleted.",
+      });
+    } catch (error) {
+      console.error('Error deleting journal entry:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete journal entry",
+        variant: "destructive",
+      });
+    }
   };
 
-  const getTodaysEntry = () => {
-    const today = new Date().toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-    return entries.find(entry => entry.date === today);
-  };
-
-  const todaysEntry = getTodaysEntry();
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">Loading journal entries...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -132,24 +227,6 @@ export const Journal = () => {
           </Button>
         </CardContent>
       </Card>
-
-      {todaysEntry && (
-        <Card className="bg-gradient-success text-success-foreground shadow-elevation">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-medium mb-1">Today's Entry</p>
-                <p className="text-sm opacity-90 line-clamp-2">{todaysEntry.content}</p>
-                {todaysEntry.mood && (
-                  <Badge variant="secondary" className="mt-2 bg-white/20 text-white">
-                    {moods.find(m => m.label === todaysEntry.mood)?.emoji} {todaysEntry.mood}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Journal History</h3>

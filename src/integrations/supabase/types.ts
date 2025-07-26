@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      habits: {
+        Row: {
+          completed_today: boolean
+          created_at: string
+          id: string
+          last_completed: string | null
+          name: string
+          streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_today?: boolean
+          created_at?: string
+          id?: string
+          last_completed?: string | null
+          name: string
+          streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_today?: boolean
+          created_at?: string
+          id?: string
+          last_completed?: string | null
+          name?: string
+          streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          content: string
+          created_at: string
+          date: string
+          id: string
+          mood: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          date: string
+          id?: string
+          mood?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          date?: string
+          id?: string
+          mood?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -39,6 +102,36 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      time_slots: {
+        Row: {
+          activity: string
+          completed: boolean | null
+          created_at: string
+          id: string
+          time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity: string
+          completed?: boolean | null
+          created_at?: string
+          id?: string
+          time: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity?: string
+          completed?: boolean | null
+          created_at?: string
+          id?: string
+          time?: string
           updated_at?: string
           user_id?: string
         }

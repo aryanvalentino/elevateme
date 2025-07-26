@@ -1,161 +1,331 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Check, Flame, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Plus, Trash2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Habit {
   id: string;
+  user_id: string;
   name: string;
   streak: number;
-  completedToday: boolean;
-  lastCompleted?: string;
+  completed_today: boolean;
+  last_completed?: string;
 }
 
 export const HabitTracker = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
-  const [newHabit, setNewHabit] = useState('');
+  const [newHabitName, setNewHabitName] = useState('');
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user, isGuest } = useAuth();
 
+  // Load habits from Supabase on component mount
   useEffect(() => {
-    const savedHabits = localStorage.getItem('elevateMe-habits');
-    if (savedHabits) {
-      setHabits(JSON.parse(savedHabits));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('elevateMe-habits', JSON.stringify(habits));
-  }, [habits]);
-
-  const addHabit = () => {
-    if (!newHabit.trim()) return;
-
-    const habit: Habit = {
-      id: Date.now().toString(),
-      name: newHabit.trim(),
-      streak: 0,
-      completedToday: false,
-    };
-
-    setHabits([...habits, habit]);
-    setNewHabit('');
-    toast({
-      title: "Habit Added!",
-      description: `"${habit.name}" has been added to your habits.`,
-    });
-  };
-
-  const toggleHabit = (id: string) => {
-    setHabits(prev => prev.map(habit => {
-      if (habit.id === id) {
-        const today = new Date().toDateString();
-        const wasCompletedToday = habit.lastCompleted === today;
-        
-        return {
-          ...habit,
-          completedToday: !wasCompletedToday,
-          lastCompleted: !wasCompletedToday ? today : undefined,
-          streak: !wasCompletedToday ? habit.streak + 1 : Math.max(0, habit.streak - 1)
-        };
+    if (isGuest) {
+      // For guests, use localStorage
+      const savedHabits = localStorage.getItem('elevateMe_habits');
+      if (savedHabits) {
+        setHabits(JSON.parse(savedHabits));
       }
-      return habit;
-    }));
+      setLoading(false);
+    } else if (user) {
+      loadHabits();
+    }
+  }, [user, isGuest]);
 
-    const habit = habits.find(h => h.id === id);
-    if (habit) {
+  // Save to localStorage for guest users
+  useEffect(() => {
+    if (isGuest) {
+      localStorage.setItem('elevateMe_habits', JSON.stringify(habits));
+    }
+  }, [habits, isGuest]);
+
+  const loadHabits = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('habits')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setHabits(data || []);
+    } catch (error) {
+      console.error('Error loading habits:', error);
       toast({
-        title: habit.completedToday ? "Habit Unchecked" : "Great Job!",
-        description: habit.completedToday 
-          ? `"${habit.name}" marked as incomplete.`
-          : `"${habit.name}" completed! Keep up the streak!`,
+        title: "Error",
+        description: "Failed to load habits",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addHabit = async () => {
+    if (newHabitName.trim() === '') {
+      toast({
+        title: "Error",
+        description: "Please enter a habit name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isGuest) {
+      // For guests, use localStorage
+      const newHabit: Habit = {
+        id: crypto.randomUUID(),
+        user_id: 'guest',
+        name: newHabitName.trim(),
+        streak: 0,
+        completed_today: false,
+      };
+      setHabits([...habits, newHabit]);
+      setNewHabitName('');
+      toast({
+        title: "Success",
+        description: "Habit added successfully!",
+      });
+      return;
+    }
+
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('habits')
+        .insert([
+          {
+            user_id: user.id,
+            name: newHabitName.trim(),
+            streak: 0,
+            completed_today: false,
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setHabits([...habits, data]);
+      setNewHabitName('');
+      toast({
+        title: "Success",
+        description: "Habit added successfully!",
+      });
+    } catch (error) {
+      console.error('Error adding habit:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add habit",
+        variant: "destructive",
       });
     }
   };
 
-  const deleteHabit = (id: string) => {
+  const toggleHabit = async (id: string) => {
+    const today = new Date().toISOString().split('T')[0];
     const habit = habits.find(h => h.id === id);
-    setHabits(prev => prev.filter(h => h.id !== id));
-    
-    if (habit) {
+    if (!habit) return;
+
+    if (isGuest) {
+      // For guests, use localStorage
+      setHabits(habits.map(h => {
+        if (h.id === id) {
+          const wasCompleted = h.completed_today;
+          const newCompleted = !wasCompleted;
+          
+          let newStreak = h.streak;
+          if (newCompleted) {
+            if (h.last_completed !== today) {
+              newStreak = h.streak + 1;
+            }
+          } else {
+            if (h.last_completed === today) {
+              newStreak = Math.max(0, h.streak - 1);
+            }
+          }
+
+          return {
+            ...h,
+            completed_today: newCompleted,
+            streak: newStreak,
+            last_completed: newCompleted ? today : undefined
+          };
+        }
+        return h;
+      }));
+      
       toast({
-        title: "Habit Deleted",
-        description: `"${habit.name}" has been removed from your habits.`,
+        title: "Success",
+        description: "Habit updated!",
+      });
+      return;
+    }
+
+    try {
+      const wasCompleted = habit.completed_today;
+      const newCompleted = !wasCompleted;
+      
+      let newStreak = habit.streak;
+      if (newCompleted) {
+        if (habit.last_completed !== today) {
+          newStreak = habit.streak + 1;
+        }
+      } else {
+        if (habit.last_completed === today) {
+          newStreak = Math.max(0, habit.streak - 1);
+        }
+      }
+
+      const { error } = await supabase
+        .from('habits')
+        .update({
+          completed_today: newCompleted,
+          streak: newStreak,
+          last_completed: newCompleted ? today : null
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setHabits(habits.map(h => 
+        h.id === id 
+          ? {
+              ...h,
+              completed_today: newCompleted,
+              streak: newStreak,
+              last_completed: newCompleted ? today : undefined
+            }
+          : h
+      ));
+
+      toast({
+        title: "Success",
+        description: "Habit updated!",
+      });
+    } catch (error) {
+      console.error('Error updating habit:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update habit",
+        variant: "destructive",
       });
     }
   };
+
+  const deleteHabit = async (id: string) => {
+    if (isGuest) {
+      // For guests, use localStorage
+      setHabits(habits.filter(habit => habit.id !== id));
+      toast({
+        title: "Success",
+        description: "Habit deleted successfully!",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('habits')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setHabits(habits.filter(habit => habit.id !== id));
+      toast({
+        title: "Success",
+        description: "Habit deleted successfully!",
+      });
+    } catch (error) {
+      console.error('Error deleting habit:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete habit",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        <div className="text-center">Loading habits...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-gradient-card shadow-card-shadow">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Flame className="h-5 w-5 text-accent" />
-            Add New Habit
-          </CardTitle>
+          <CardTitle>Add New Habit</CardTitle>
+          <CardDescription>Track your daily habits and build lasting routines</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-2">
             <Input
-              placeholder="Enter a new habit..."
-              value={newHabit}
-              onChange={(e) => setNewHabit(e.target.value)}
+              type="text"
+              placeholder="Enter habit name..."
+              value={newHabitName}
+              onChange={(e) => setNewHabitName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addHabit()}
               className="flex-1"
             />
-            <Button onClick={addHabit} className="bg-gradient-primary">
-              <Plus className="h-4 w-4" />
+            <Button onClick={addHabit} className="shrink-0">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Habit
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4">
-        {habits.map((habit) => (
-          <Card key={habit.id} className="bg-gradient-card shadow-card-shadow hover:shadow-elevation transition-all duration-200">
-            <CardContent className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-3">
-                <Button
-                  variant={habit.completedToday ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleHabit(habit.id)}
-                  className={habit.completedToday ? "bg-gradient-success" : ""}
-                >
-                  <Check className="h-4 w-4" />
-                </Button>
-                <div>
-                  <h3 className={`font-medium ${habit.completedToday ? 'line-through text-muted-foreground' : ''}`}>
-                    {habit.name}
-                  </h3>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {habits.length === 0 ? (
+          <Card className="col-span-full">
+            <CardContent className="flex items-center justify-center py-12">
+              <p className="text-muted-foreground">No habits added yet. Start by adding your first habit!</p>
+            </CardContent>
+          </Card>
+        ) : (
+          habits.map((habit) => (
+            <Card key={habit.id} className={`relative ${habit.completed_today ? 'ring-2 ring-green-500' : ''}`}>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <CardTitle className="text-lg">{habit.name}</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteHabit(habit.id)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="flex items-center gap-0.5 text-xs px-2 py-0.5">
-                  <Flame className="h-2.5 w-2.5" />
-                  {habit.streak}d
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteHabit(habit.id)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        
-        {habits.length === 0 && (
-          <Card className="bg-gradient-card shadow-card-shadow">
-            <CardContent className="text-center py-8">
-              <p className="text-muted-foreground">No habits yet. Add your first habit above!</p>
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Current Streak</span>
+                    <span className="text-2xl font-bold text-primary">{habit.streak}</span>
+                  </div>
+                  
+                  <Button
+                    onClick={() => toggleHabit(habit.id)}
+                    variant={habit.completed_today ? "default" : "outline"}
+                    className="w-full"
+                  >
+                    {habit.completed_today ? "✓ Completed Today" : "Mark Complete"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
         )}
       </div>
     </div>

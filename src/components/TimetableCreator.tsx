@@ -6,9 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Clock, Trash2, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TimeSlot {
   id: string;
+  user_id: string;
   time: string;
   activity: string;
   completed?: boolean;
@@ -20,34 +23,64 @@ export const TimetableCreator = () => {
   const [minute, setMinute] = useState('');
   const [period, setPeriod] = useState('');
   const [newActivity, setNewActivity] = useState('');
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user, isGuest } = useAuth();
 
   useEffect(() => {
-    const savedTimeSlots = localStorage.getItem('elevateMe-timetable');
-    const lastResetDate = localStorage.getItem('elevateMe-timetable-lastReset');
-    const today = new Date().toDateString();
+    if (isGuest) {
+      const savedTimeSlots = localStorage.getItem('elevateMe-timetable');
+      const lastResetDate = localStorage.getItem('elevateMe-timetable-lastReset');
+      const today = new Date().toDateString();
 
-    if (savedTimeSlots) {
-      const slots = JSON.parse(savedTimeSlots);
-      
-      // Reset completions if it's a new day
-      if (lastResetDate !== today) {
-        const resetSlots = slots.map((slot: TimeSlot) => ({ ...slot, completed: false }));
-        setTimeSlots(resetSlots);
-        localStorage.setItem('elevateMe-timetable-lastReset', today);
+      if (savedTimeSlots) {
+        const slots = JSON.parse(savedTimeSlots);
+        
+        // Reset completions if it's a new day
+        if (lastResetDate !== today) {
+          const resetSlots = slots.map((slot: TimeSlot) => ({ ...slot, completed: false }));
+          setTimeSlots(resetSlots);
+          localStorage.setItem('elevateMe-timetable-lastReset', today);
+        } else {
+          setTimeSlots(slots);
+        }
       } else {
-        setTimeSlots(slots);
+        localStorage.setItem('elevateMe-timetable-lastReset', today);
       }
-    } else {
-      localStorage.setItem('elevateMe-timetable-lastReset', today);
+      setLoading(false);
+    } else if (user) {
+      loadTimeSlots();
     }
-  }, []);
+  }, [user, isGuest]);
 
   useEffect(() => {
-    localStorage.setItem('elevateMe-timetable', JSON.stringify(timeSlots));
-  }, [timeSlots]);
+    if (isGuest) {
+      localStorage.setItem('elevateMe-timetable', JSON.stringify(timeSlots));
+    }
+  }, [timeSlots, isGuest]);
 
-  const addTimeSlot = () => {
+  const loadTimeSlots = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('time_slots')
+        .select('*')
+        .order('time', { ascending: true });
+
+      if (error) throw error;
+      setTimeSlots(data || []);
+    } catch (error) {
+      console.error('Error loading time slots:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load timetable",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addTimeSlot = async () => {
     if (!hour || !minute || !period || !newActivity.trim()) {
       toast({
         title: "Missing Information",
@@ -58,44 +91,154 @@ export const TimetableCreator = () => {
     }
 
     const formattedTime = `${hour}:${minute} ${period}`;
-    const timeSlot: TimeSlot = {
-      id: Date.now().toString(),
-      time: formattedTime,
-      activity: newActivity.trim(),
-    };
 
-    const updatedSlots = [...timeSlots, timeSlot].sort((a, b) => a.time.localeCompare(b.time));
-    setTimeSlots(updatedSlots);
-    setHour('');
-    setMinute('');
-    setPeriod('');
-    setNewActivity('');
-    
-    toast({
-      title: "Time Slot Added!",
-      description: `${formattedTime} - ${newActivity} has been added to your timetable.`,
-    });
+    if (isGuest) {
+      // For guests, use localStorage
+      const existingSlot = timeSlots.find(slot => slot.time === formattedTime);
+      if (existingSlot) {
+        toast({
+          title: "Time Conflict",
+          description: "A time slot already exists for this time.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const timeSlot: TimeSlot = {
+        id: Date.now().toString(),
+        user_id: 'guest',
+        time: formattedTime,
+        activity: newActivity.trim(),
+      };
+
+      const updatedSlots = [...timeSlots, timeSlot].sort((a, b) => a.time.localeCompare(b.time));
+      setTimeSlots(updatedSlots);
+      setHour('');
+      setMinute('');
+      setPeriod('');
+      setNewActivity('');
+      
+      toast({
+        title: "Time Slot Added!",
+        description: `${formattedTime} - ${newActivity} has been added to your timetable.`,
+      });
+      return;
+    }
+
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('time_slots')
+        .insert([
+          {
+            user_id: user.id,
+            time: formattedTime,
+            activity: newActivity.trim(),
+            completed: false,
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const updatedSlots = [...timeSlots, data].sort((a, b) => a.time.localeCompare(b.time));
+      setTimeSlots(updatedSlots);
+      setHour('');
+      setMinute('');
+      setPeriod('');
+      setNewActivity('');
+      
+      toast({
+        title: "Time Slot Added!",
+        description: `${formattedTime} - ${newActivity} has been added to your timetable.`,
+      });
+    } catch (error) {
+      console.error('Error adding time slot:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add time slot",
+        variant: "destructive",
+      });
+    }
   };
 
-  const removeTimeSlot = (id: string) => {
-    setTimeSlots(prev => prev.filter(slot => slot.id !== id));
-    toast({
-      title: "Time Slot Removed",
-      description: "The time slot has been removed from your timetable.",
-    });
+  const removeTimeSlot = async (id: string) => {
+    if (isGuest) {
+      // For guests, use localStorage
+      setTimeSlots(prev => prev.filter(slot => slot.id !== id));
+      toast({
+        title: "Time Slot Removed",
+        description: "The time slot has been removed from your timetable.",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('time_slots')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setTimeSlots(prev => prev.filter(slot => slot.id !== id));
+      toast({
+        title: "Time Slot Removed",
+        description: "The time slot has been removed from your timetable.",
+      });
+    } catch (error) {
+      console.error('Error removing time slot:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove time slot",
+        variant: "destructive",
+      });
+    }
   };
 
-  const toggleCompletion = (id: string) => {
-    setTimeSlots(prev => prev.map(slot => 
-      slot.id === id ? { ...slot, completed: !slot.completed } : slot
-    ));
-    
+  const toggleCompletion = async (id: string) => {
     const slot = timeSlots.find(s => s.id === id);
-    if (slot) {
+    if (!slot) return;
+
+    if (isGuest) {
+      // For guests, use localStorage
+      setTimeSlots(prev => prev.map(s => 
+        s.id === id ? { ...s, completed: !s.completed } : s
+      ));
+      
       toast({
         title: slot.completed ? "Task Unmarked" : "Task Completed!",
         description: `${slot.activity} has been ${slot.completed ? 'unmarked' : 'marked as complete'}.`,
         variant: slot.completed ? "default" : "default",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('time_slots')
+        .update({ completed: !slot.completed })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setTimeSlots(prev => prev.map(s => 
+        s.id === id ? { ...s, completed: !s.completed } : s
+      ));
+      
+      toast({
+        title: slot.completed ? "Task Unmarked" : "Task Completed!",
+        description: `${slot.activity} has been ${slot.completed ? 'unmarked' : 'marked as complete'}.`,
+        variant: slot.completed ? "default" : "default",
+      });
+    } catch (error) {
+      console.error('Error updating completion status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update completion status",
+        variant: "destructive",
       });
     }
   };
@@ -109,6 +252,14 @@ export const TimetableCreator = () => {
       return slotTime <= currentTime;
     });
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">Loading timetable...</div>
+      </div>
+    );
+  }
 
   const currentSlot = getCurrentTimeSlot();
 
