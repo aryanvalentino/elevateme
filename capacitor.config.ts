@@ -17,6 +17,12 @@ const config: CapacitorConfig = {
     App: {
       handleDeepLinks: true,
     },
+    SplashScreen: {
+      launchShowDuration: 2000,
+      launchAutoHide: true,
+      backgroundColor: "#6366f1",
+      showSpinner: false,
+    },
   },
 };
 
