@@ -23,8 +23,13 @@ export const AuthForm = () => {
     setLoading(true);
     setError('');
 
-    const redirectUrl = `${window.location.origin}/`;
-    console.log('Redirect URL:', redirectUrl);
+    // Use deep link for mobile app or fallback to web URL
+    const isCapacitorApp = window.location.protocol === 'capacitor:';
+    const redirectUrl = isCapacitorApp 
+      ? 'elevateme://auth/callback'
+      : `${window.location.origin}/`;
+    
+    console.log('Redirect URL:', redirectUrl, 'isCapacitorApp:', isCapacitorApp);
     
     try {
       const { error } = await supabase.auth.signUp({
