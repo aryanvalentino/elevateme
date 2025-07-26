@@ -10,10 +10,10 @@ const config: CapacitorConfig = {
     cleartext: true
   },
   android: {
-    iconGeneratorSource: 'public/icon-1024.png'
+    iconGeneratorSource: 'icon-1024.png'
   },
   ios: {
-    iconGeneratorSource: 'public/icon-1024.png'
+    iconGeneratorSource: 'icon-1024.png'
   },
   plugins: {
     App: {
