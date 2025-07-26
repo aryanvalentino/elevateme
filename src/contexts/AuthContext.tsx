@@ -9,6 +9,7 @@ interface AuthContextType {
   isGuest: boolean;
   signOut: () => Promise<void>;
   continueAsGuest: () => void;
+  exitGuestMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -78,13 +79,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     console.log('Guest mode set:', { isGuest: true, localStorage: localStorage.getItem('elevateMe_guestMode') });
   };
 
+  const exitGuestMode = () => {
+    console.log('Exiting guest mode');
+    setIsGuest(false);
+    localStorage.removeItem('elevateMe_guestMode');
+  };
+
   const value = {
     user,
     session,
     loading,
     isGuest,
     signOut,
-    continueAsGuest
+    continueAsGuest,
+    exitGuestMode
   };
 
   return (

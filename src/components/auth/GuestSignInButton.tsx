@@ -5,15 +5,21 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export const GuestSignInButton = () => {
   const navigate = useNavigate();
-  const { isGuest } = useAuth();
+  const { isGuest, exitGuestMode } = useAuth();
 
   console.log('GuestSignInButton render:', { isGuest });
 
   if (!isGuest) return null;
 
+  const handleSignInClick = () => {
+    console.log('Sign In button clicked, exiting guest mode and navigating to /auth');
+    exitGuestMode();
+    navigate('/auth');
+  };
+
   return (
     <Button
-      onClick={() => navigate('/auth')}
+      onClick={handleSignInClick}
       variant="outline"
       size="sm"
       className="flex items-center gap-2"
