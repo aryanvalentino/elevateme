@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Clock, Trash2, Check } from 'lucide-react';
+import { Plus, Clock, Trash2, Check, Bell, BellOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 interface TimeSlot {
   id: string;
@@ -24,8 +25,103 @@ export const TimetableCreator = () => {
   const [period, setPeriod] = useState('');
   const [newActivity, setNewActivity] = useState('');
   const [loading, setLoading] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { toast } = useToast();
   const { user, isGuest } = useAuth();
+
+  // Check notification permissions on load
+  useEffect(() => {
+    checkNotificationPermissions();
+  }, []);
+
+  const checkNotificationPermissions = async () => {
+    try {
+      const permission = await LocalNotifications.checkPermissions();
+      setNotificationsEnabled(permission.display === 'granted');
+    } catch (error) {
+      console.log('Notifications not available on this platform');
+    }
+  };
+
+  const requestNotificationPermissions = async () => {
+    try {
+      const permission = await LocalNotifications.requestPermissions();
+      if (permission.display === 'granted') {
+        setNotificationsEnabled(true);
+        toast({
+          title: "Notifications Enabled!",
+          description: "You'll receive reminders for your scheduled activities.",
+        });
+      } else {
+        toast({
+          title: "Notifications Denied",
+          description: "You won't receive reminders. You can enable them in device settings.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Notifications Not Available",
+        description: "Notifications are not supported on this platform.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const scheduleNotification = async (timeSlot: TimeSlot) => {
+    if (!notificationsEnabled) return;
+
+    try {
+      // Parse the time slot time (e.g., "09:30 AM") to create a notification time
+      const [timeStr, period] = timeSlot.time.split(' ');
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      
+      // Convert to 24-hour format
+      let hour24 = hours;
+      if (period === 'PM' && hours !== 12) hour24 += 12;
+      if (period === 'AM' && hours === 12) hour24 = 0;
+
+      // Create notification for today at the specified time
+      const now = new Date();
+      const notificationTime = new Date();
+      notificationTime.setHours(hour24, minutes, 0, 0);
+
+      // If the time has already passed today, schedule for tomorrow
+      if (notificationTime <= now) {
+        notificationTime.setDate(notificationTime.getDate() + 1);
+      }
+
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            title: 'Time for your activity! ⏰',
+            body: `It's time for: ${timeSlot.activity}`,
+            id: parseInt(timeSlot.id),
+            schedule: { at: notificationTime },
+            actionTypeId: 'OPEN_APP',
+            extra: {
+              timeSlotId: timeSlot.id,
+              activity: timeSlot.activity,
+            }
+          }
+        ]
+      });
+
+      console.log(`Notification scheduled for ${timeSlot.time} - ${timeSlot.activity}`);
+    } catch (error) {
+      console.error('Error scheduling notification:', error);
+    }
+  };
+
+  const cancelNotification = async (timeSlotId: string) => {
+    try {
+      await LocalNotifications.cancel({
+        notifications: [{ id: parseInt(timeSlotId) }]
+      });
+    } catch (error) {
+      console.error('Error canceling notification:', error);
+    }
+  };
 
   useEffect(() => {
     if (isGuest) {
@@ -118,6 +214,9 @@ export const TimetableCreator = () => {
       setPeriod('');
       setNewActivity('');
       
+      // Schedule notification for the new time slot
+      await scheduleNotification(timeSlot);
+      
       toast({
         title: "Time Slot Added!",
         description: `${formattedTime} - ${newActivity} has been added to your timetable.`,
@@ -150,6 +249,9 @@ export const TimetableCreator = () => {
       setPeriod('');
       setNewActivity('');
       
+      // Schedule notification for the new time slot
+      await scheduleNotification(data);
+      
       toast({
         title: "Time Slot Added!",
         description: `${formattedTime} - ${newActivity} has been added to your timetable.`,
@@ -165,6 +267,9 @@ export const TimetableCreator = () => {
   };
 
   const removeTimeSlot = async (id: string) => {
+    // Cancel the notification first
+    await cancelNotification(id);
+    
     if (isGuest) {
       // For guests, use localStorage
       setTimeSlots(prev => prev.filter(slot => slot.id !== id));
@@ -318,10 +423,32 @@ export const TimetableCreator = () => {
               className="md:col-span-2"
             />
           </div>
-          <Button onClick={addTimeSlot} className="w-full bg-gradient-primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Add to Timetable
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={addTimeSlot} className="flex-1 bg-gradient-primary">
+              <Plus className="h-4 w-4 mr-2" />
+              Add to Timetable
+            </Button>
+            
+            {!notificationsEnabled ? (
+              <Button 
+                variant="outline" 
+                onClick={requestNotificationPermissions}
+                className="px-3"
+                title="Enable notifications to get reminders"
+              >
+                <BellOff className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button 
+                variant="secondary" 
+                disabled
+                className="px-3"
+                title="Notifications enabled"
+              >
+                <Bell className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
