@@ -7,6 +7,8 @@ export const GuestSignInButton = () => {
   const navigate = useNavigate();
   const { isGuest } = useAuth();
 
+  console.log('GuestSignInButton render:', { isGuest });
+
   if (!isGuest) return null;
 
   return (

@@ -14,6 +14,8 @@ const queryClient = new QueryClient();
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, isGuest } = useAuth();
   
+  console.log('ProtectedRoute:', { user: !!user, loading, isGuest });
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -23,6 +25,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
   
   if (!user && !isGuest) {
+    console.log('Redirecting to auth - no user and not guest');
     return <Navigate to="/auth" replace />;
   }
   

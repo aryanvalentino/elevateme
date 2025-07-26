@@ -71,9 +71,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const continueAsGuest = () => {
+    console.log('Continue as guest clicked');
     setIsGuest(true);
     setLoading(false);
     localStorage.setItem('elevateMe_guestMode', 'true');
+    console.log('Guest mode set:', { isGuest: true, localStorage: localStorage.getItem('elevateMe_guestMode') });
   };
 
   const value = {
