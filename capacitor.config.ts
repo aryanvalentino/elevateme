@@ -9,6 +9,12 @@ const config: CapacitorConfig = {
     url: "https://e866bdce-a26c-4508-b2cf-014eab158c2f.lovableproject.com?forceHideBadge=true",
     cleartext: true
   },
+  android: {
+    iconGeneratorSource: 'public/icon-1024.png'
+  },
+  ios: {
+    iconGeneratorSource: 'public/icon-1024.png'
+  },
   plugins: {
     App: {
       handleDeepLinks: true,
