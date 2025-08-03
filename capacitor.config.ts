@@ -5,10 +5,11 @@ const config: CapacitorConfig = {
   appName: 'Elevate Me',
   webDir: 'dist',
   bundledWebRuntime: false,
-  server: {
-    url: "https://e866bdce-a26c-4508-b2cf-014eab158c2f.lovableproject.com?forceHideBadge=true",
-    cleartext: true
-  },
+  // Remove server config for production builds
+  // server: {
+  //   url: "https://e866bdce-a26c-4508-b2cf-014eab158c2f.lovableproject.com?forceHideBadge=true",
+  //   cleartext: true
+  // },
   android: {
   },
   ios: {
