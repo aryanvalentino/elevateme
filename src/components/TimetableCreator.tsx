@@ -4,11 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Clock, Trash2, Check, Bell, BellOff } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { Clock, Plus, Trash2, CheckCircle2, Bell, BellOff } from 'lucide-react';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { useToast } from '@/hooks/use-toast';
 
 interface TimeSlot {
   id: string;
@@ -22,15 +20,14 @@ export const TimetableCreator = () => {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [hour, setHour] = useState('');
   const [minute, setMinute] = useState('');
-  const [period, setPeriod] = useState('');
-  const [newActivity, setNewActivity] = useState('');
+  const [period, setPeriod] = useState('AM');
+  const [activity, setActivity] = useState('');
   const [loading, setLoading] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { toast } = useToast();
-  const { user, isGuest } = useAuth();
 
-  // Check notification permissions on load
   useEffect(() => {
+    loadTimeSlots();
     checkNotificationPermissions();
   }, []);
 
@@ -49,22 +46,50 @@ export const TimetableCreator = () => {
       if (permission.display === 'granted') {
         setNotificationsEnabled(true);
         toast({
-          title: "Notifications Enabled!",
-          description: "You'll receive reminders for your scheduled activities.",
-        });
-      } else {
-        toast({
-          title: "Notifications Denied",
-          description: "You won't receive reminders. You can enable them in device settings.",
-          variant: "destructive",
+          title: "Notifications enabled!",
+          description: "You'll receive reminders for your activities.",
         });
       }
     } catch (error) {
       toast({
-        title: "Notifications Not Available",
+        title: "Notifications not available",
         description: "Notifications are not supported on this platform.",
         variant: "destructive",
       });
+    }
+  };
+
+  const convertTo24Hour = (time12h: string) => {
+    const [time, modifier] = time12h.split(' ');
+    let [hours, minutes] = time.split(':');
+    if (hours === '12') {
+      hours = '00';
+    }
+    if (modifier === 'PM') {
+      hours = parseInt(hours, 10) + 12 + '';
+    }
+    return `${hours.padStart(2, '0')}:${minutes}`;
+  };
+
+  const loadTimeSlots = async () => {
+    setLoading(true);
+    try {
+      // Load from localStorage
+      const savedTimeSlots = localStorage.getItem('time_slots');
+      if (savedTimeSlots) {
+        const parsedTimeSlots = JSON.parse(savedTimeSlots);
+        // Sort by time
+        parsedTimeSlots.sort((a: TimeSlot, b: TimeSlot) => {
+          const timeA = convertTo24Hour(a.time);
+          const timeB = convertTo24Hour(b.time);
+          return timeA.localeCompare(timeB);
+        });
+        setTimeSlots(parsedTimeSlots);
+      }
+    } catch (error) {
+      console.error('Error loading time slots:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,21 +97,17 @@ export const TimetableCreator = () => {
     if (!notificationsEnabled) return;
 
     try {
-      // Parse the time slot time (e.g., "09:30 AM") to create a notification time
       const [timeStr, period] = timeSlot.time.split(' ');
       const [hours, minutes] = timeStr.split(':').map(Number);
       
-      // Convert to 24-hour format
       let hour24 = hours;
       if (period === 'PM' && hours !== 12) hour24 += 12;
       if (period === 'AM' && hours === 12) hour24 = 0;
 
-      // Create notification for today at the specified time
       const now = new Date();
       const notificationTime = new Date();
       notificationTime.setHours(hour24, minutes, 0, 0);
 
-      // If the time has already passed today, schedule for tomorrow
       if (notificationTime <= now) {
         notificationTime.setDate(notificationTime.getDate() + 1);
       }
@@ -96,18 +117,11 @@ export const TimetableCreator = () => {
           {
             title: 'Time for your activity! ⏰',
             body: `It's time for: ${timeSlot.activity}`,
-            id: parseInt(timeSlot.id),
+            id: parseInt(timeSlot.id.replace(/\D/g, '').slice(0, 9)) || Math.floor(Math.random() * 1000000),
             schedule: { at: notificationTime },
-            actionTypeId: 'OPEN_APP',
-            extra: {
-              timeSlotId: timeSlot.id,
-              activity: timeSlot.activity,
-            }
           }
         ]
       });
-
-      console.log(`Notification scheduled for ${timeSlot.time} - ${timeSlot.activity}`);
     } catch (error) {
       console.error('Error scheduling notification:', error);
     }
@@ -115,146 +129,64 @@ export const TimetableCreator = () => {
 
   const cancelNotification = async (timeSlotId: string) => {
     try {
+      const numericId = parseInt(timeSlotId.replace(/\D/g, '').slice(0, 9)) || Math.floor(Math.random() * 1000000);
       await LocalNotifications.cancel({
-        notifications: [{ id: parseInt(timeSlotId) }]
+        notifications: [{ id: numericId }]
       });
     } catch (error) {
       console.error('Error canceling notification:', error);
     }
   };
 
-  useEffect(() => {
-    if (isGuest) {
-      const savedTimeSlots = localStorage.getItem('elevateMe-timetable');
-      const lastResetDate = localStorage.getItem('elevateMe-timetable-lastReset');
-      const today = new Date().toDateString();
-
-      if (savedTimeSlots) {
-        const slots = JSON.parse(savedTimeSlots);
-        
-        // Reset completions if it's a new day
-        if (lastResetDate !== today) {
-          const resetSlots = slots.map((slot: TimeSlot) => ({ ...slot, completed: false }));
-          setTimeSlots(resetSlots);
-          localStorage.setItem('elevateMe-timetable-lastReset', today);
-        } else {
-          setTimeSlots(slots);
-        }
-      } else {
-        localStorage.setItem('elevateMe-timetable-lastReset', today);
-      }
-      setLoading(false);
-    } else if (user) {
-      loadTimeSlots();
-    }
-  }, [user, isGuest]);
-
-  useEffect(() => {
-    if (isGuest) {
-      localStorage.setItem('elevateMe-timetable', JSON.stringify(timeSlots));
-    }
-  }, [timeSlots, isGuest]);
-
-  const loadTimeSlots = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('time_slots')
-        .select('*')
-        .order('time', { ascending: true });
-
-      if (error) throw error;
-      setTimeSlots(data || []);
-    } catch (error) {
-      console.error('Error loading time slots:', error);
+  const addTimeSlot = async () => {
+    if (!hour || !minute || !activity.trim()) {
       toast({
         title: "Error",
-        description: "Failed to load timetable",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addTimeSlot = async () => {
-    if (!hour || !minute || !period || !newActivity.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter time and activity.",
+        description: "Please fill in all fields",
         variant: "destructive",
       });
       return;
     }
 
-    const formattedTime = `${hour}:${minute} ${period}`;
-
-    if (isGuest) {
-      // For guests, use localStorage
-      const existingSlot = timeSlots.find(slot => slot.time === formattedTime);
-      if (existingSlot) {
-        toast({
-          title: "Time Conflict",
-          description: "A time slot already exists for this time.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const timeSlot: TimeSlot = {
-        id: Date.now().toString(),
-        user_id: 'guest',
-        time: formattedTime,
-        activity: newActivity.trim(),
-      };
-
-      const updatedSlots = [...timeSlots, timeSlot].sort((a, b) => a.time.localeCompare(b.time));
-      setTimeSlots(updatedSlots);
-      setHour('');
-      setMinute('');
-      setPeriod('');
-      setNewActivity('');
-      
-      // Schedule notification for the new time slot
-      await scheduleNotification(timeSlot);
-      
-      toast({
-        title: "Time Slot Added!",
-        description: `${formattedTime} - ${newActivity} has been added to your timetable.`,
-      });
-      return;
-    }
-
-    if (!user) return;
+    const timeString = `${hour}:${minute.padStart(2, '0')} ${period}`;
+    
+    const timeSlotData = {
+      id: crypto.randomUUID(),
+      user_id: 'user',
+      time: timeString,
+      activity: activity.trim(),
+      completed: false,
+    };
 
     try {
-      const { data, error } = await supabase
-        .from('time_slots')
-        .insert([
-          {
-            user_id: user.id,
-            time: formattedTime,
-            activity: newActivity.trim(),
-            completed: false,
-          }
-        ])
-        .select()
-        .single();
+      // Save to localStorage
+      const savedTimeSlots = localStorage.getItem('time_slots');
+      const existingTimeSlots = savedTimeSlots ? JSON.parse(savedTimeSlots) : [];
+      const updatedTimeSlots = [...existingTimeSlots, timeSlotData];
+      
+      // Sort by time
+      updatedTimeSlots.sort((a: TimeSlot, b: TimeSlot) => {
+        const timeA = convertTo24Hour(a.time);
+        const timeB = convertTo24Hour(b.time);
+        return timeA.localeCompare(timeB);
+      });
+      
+      localStorage.setItem('time_slots', JSON.stringify(updatedTimeSlots));
+      setTimeSlots(updatedTimeSlots);
 
-      if (error) throw error;
+      // Schedule notification if enabled
+      if (notificationsEnabled) {
+        scheduleNotification(timeSlotData);
+      }
 
-      const updatedSlots = [...timeSlots, data].sort((a, b) => a.time.localeCompare(b.time));
-      setTimeSlots(updatedSlots);
       setHour('');
       setMinute('');
-      setPeriod('');
-      setNewActivity('');
-      
-      // Schedule notification for the new time slot
-      await scheduleNotification(data);
+      setPeriod('AM');
+      setActivity('');
       
       toast({
-        title: "Time Slot Added!",
-        description: `${formattedTime} - ${newActivity} has been added to your timetable.`,
+        title: "Time slot added!",
+        description: `"${timeSlotData.activity}" scheduled for ${timeString}.`,
       });
     } catch (error) {
       console.error('Error adding time slot:', error);
@@ -267,93 +199,71 @@ export const TimetableCreator = () => {
   };
 
   const removeTimeSlot = async (id: string) => {
-    // Cancel the notification first
-    await cancelNotification(id);
-    
-    if (isGuest) {
-      // For guests, use localStorage
-      setTimeSlots(prev => prev.filter(slot => slot.id !== id));
-      toast({
-        title: "Time Slot Removed",
-        description: "The time slot has been removed from your timetable.",
-      });
-      return;
-    }
-
     try {
-      const { error } = await supabase
-        .from('time_slots')
-        .delete()
-        .eq('id', id);
+      // Remove from localStorage
+      const savedTimeSlots = localStorage.getItem('time_slots');
+      if (savedTimeSlots) {
+        const existingTimeSlots = JSON.parse(savedTimeSlots);
+        const updatedTimeSlots = existingTimeSlots.filter((slot: TimeSlot) => slot.id !== id);
+        localStorage.setItem('time_slots', JSON.stringify(updatedTimeSlots));
+        setTimeSlots(updatedTimeSlots);
+      }
 
-      if (error) throw error;
+      // Cancel notification
+      cancelNotification(id);
 
-      setTimeSlots(prev => prev.filter(slot => slot.id !== id));
       toast({
-        title: "Time Slot Removed",
-        description: "The time slot has been removed from your timetable.",
+        title: "Time slot removed",
+        description: "The time slot has been deleted.",
       });
     } catch (error) {
       console.error('Error removing time slot:', error);
       toast({
         title: "Error",
-        description: "Failed to remove time slot",
+        description: "Failed to delete time slot",
         variant: "destructive",
       });
     }
   };
 
   const toggleCompletion = async (id: string) => {
-    const slot = timeSlots.find(s => s.id === id);
-    if (!slot) return;
+    const timeSlot = timeSlots.find(slot => slot.id === id);
+    if (!timeSlot) return;
 
-    if (isGuest) {
-      // For guests, use localStorage
-      setTimeSlots(prev => prev.map(s => 
-        s.id === id ? { ...s, completed: !s.completed } : s
-      ));
-      
-      toast({
-        title: slot.completed ? "Task Unmarked" : "Task Completed!",
-        description: `${slot.activity} has been ${slot.completed ? 'unmarked' : 'marked as complete'}.`,
-        variant: slot.completed ? "default" : "default",
-      });
-      return;
-    }
+    const updatedSlot = { ...timeSlot, completed: !timeSlot.completed };
 
     try {
-      const { error } = await supabase
-        .from('time_slots')
-        .update({ completed: !slot.completed })
-        .eq('id', id);
+      // Update localStorage
+      const savedTimeSlots = localStorage.getItem('time_slots');
+      if (savedTimeSlots) {
+        const existingTimeSlots = JSON.parse(savedTimeSlots);
+        const updatedTimeSlots = existingTimeSlots.map((slot: TimeSlot) => 
+          slot.id === id ? updatedSlot : slot
+        );
+        localStorage.setItem('time_slots', JSON.stringify(updatedTimeSlots));
+        setTimeSlots(updatedTimeSlots);
+      }
 
-      if (error) throw error;
-
-      setTimeSlots(prev => prev.map(s => 
-        s.id === id ? { ...s, completed: !s.completed } : s
-      ));
-      
       toast({
-        title: slot.completed ? "Task Unmarked" : "Task Completed!",
-        description: `${slot.activity} has been ${slot.completed ? 'unmarked' : 'marked as complete'}.`,
-        variant: slot.completed ? "default" : "default",
+        title: updatedSlot.completed ? "Task completed!" : "Task unmarked",
+        description: `"${timeSlot.activity}" ${updatedSlot.completed ? 'completed' : 'marked as incomplete'}.`,
       });
     } catch (error) {
-      console.error('Error updating completion status:', error);
+      console.error('Error toggling completion:', error);
       toast({
         title: "Error",
-        description: "Failed to update completion status",
+        description: "Failed to update time slot",
         variant: "destructive",
       });
     }
   };
 
-  const getCurrentTimeSlot = () => {
+  const getCurrentActivity = () => {
     const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5);
+    const currentTime = convertTo24Hour(`${now.getHours() % 12 || 12}:${now.getMinutes().toString().padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`);
     
     return timeSlots.find(slot => {
-      const slotTime = slot.time;
+      const slotTime = convertTo24Hour(slot.time);
       return slotTime <= currentTime;
     });
   };
@@ -366,14 +276,14 @@ export const TimetableCreator = () => {
     );
   }
 
-  const currentSlot = getCurrentTimeSlot();
+  const currentActivity = getCurrentActivity();
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-card shadow-card-shadow">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
+            <Clock className="h-5 w-5" />
             Add Time Slot
           </CardTitle>
         </CardHeader>
@@ -397,9 +307,9 @@ export const TimetableCreator = () => {
                 <SelectValue placeholder="Min" />
               </SelectTrigger>
               <SelectContent>
-                {Array.from({ length: 60 }, (_, i) => i).map((m) => (
-                  <SelectItem key={m} value={m.toString().padStart(2, '0')}>
-                    {m.toString().padStart(2, '0')}
+                {['00', '15', '30', '45'].map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -417,14 +327,14 @@ export const TimetableCreator = () => {
             
             <Input
               placeholder="Enter activity..."
-              value={newActivity}
-              onChange={(e) => setNewActivity(e.target.value)}
+              value={activity}
+              onChange={(e) => setActivity(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addTimeSlot()}
               className="md:col-span-2"
             />
           </div>
           <div className="flex gap-2">
-            <Button onClick={addTimeSlot} className="flex-1 bg-gradient-primary">
+            <Button onClick={addTimeSlot} className="flex-1">
               <Plus className="h-4 w-4 mr-2" />
               Add to Timetable
             </Button>
@@ -452,14 +362,14 @@ export const TimetableCreator = () => {
         </CardContent>
       </Card>
 
-      {currentSlot && (
-        <Card className="bg-gradient-primary text-primary-foreground shadow-elevation">
+      {currentActivity && (
+        <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
+              <Clock className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="font-medium">Current Activity</p>
-                <p className="text-sm opacity-90">{currentSlot.time} - {currentSlot.activity}</p>
+                <p className="font-medium text-blue-900 dark:text-blue-100">Current Activity</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300">{currentActivity.time} - {currentActivity.activity}</p>
               </div>
             </div>
           </CardContent>
@@ -469,18 +379,19 @@ export const TimetableCreator = () => {
       <div className="space-y-3">
         <h3 className="text-lg font-semibold">Today's Schedule</h3>
         {timeSlots.map((slot) => (
-          <Card key={slot.id} className={`bg-gradient-card shadow-card-shadow hover:shadow-elevation transition-all duration-200 ${slot.completed ? 'opacity-60' : ''}`}>
+          <Card key={slot.id} className={slot.completed ? 'bg-green-50 dark:bg-green-950' : ''}>
             <CardContent className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <Badge variant="outline" className="font-mono">
                   {slot.time}
                 </Badge>
-                <span className={`font-medium ${slot.completed ? 'line-through text-muted-foreground' : ''}`}>
+                <span className={slot.completed ? 'line-through text-muted-foreground' : 'font-medium'}>
                   {slot.activity}
                 </span>
                 {slot.completed && (
-                  <Badge variant="secondary" className="bg-success text-success-foreground">
-                    Completed
+                  <Badge variant="default" className="bg-green-600">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Done
                   </Badge>
                 )}
               </div>
@@ -490,15 +401,15 @@ export const TimetableCreator = () => {
                   variant={slot.completed ? "default" : "outline"}
                   size="sm"
                   onClick={() => toggleCompletion(slot.id)}
-                  className={slot.completed ? "bg-success hover:bg-success/80" : ""}
+                  className={slot.completed ? "bg-green-600 hover:bg-green-700" : ""}
                 >
-                  <Check className="h-4 w-4" />
+                  <CheckCircle2 className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => removeTimeSlot(slot.id)}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="text-destructive hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -508,7 +419,7 @@ export const TimetableCreator = () => {
         ))}
         
         {timeSlots.length === 0 && (
-          <Card className="bg-gradient-card shadow-card-shadow">
+          <Card>
             <CardContent className="text-center py-8">
               <p className="text-muted-foreground">No time slots scheduled. Add your first activity above!</p>
             </CardContent>
