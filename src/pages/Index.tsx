@@ -15,15 +15,14 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <header className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h1 className="text-4xl font-bold text-white">ElevateMe</h1>
-            <Calendar className="h-8 w-8 text-white" />
+          <div className="flex-1 text-center">
+            <h1 className="text-2xl font-bold text-white">ElevateMe</h1>
+            <p className="text-sm mt-1 text-white/80">Track habits • Schedule time • Reflect daily</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <ThemeToggle />
           </div>
         </div>
-        <p className="text-xl mt-2 text-white/80">Track habits • Schedule time • Reflect daily</p>
       </header>
 
       <main className="container mx-auto p-6">
