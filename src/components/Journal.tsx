@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Calendar, Smile } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useDataRefresh } from '@/contexts/DataRefreshContext';
 
 interface JournalEntry {
   id: string;
@@ -14,12 +15,13 @@ interface JournalEntry {
   mood?: string;
 }
 
-export const Journal = () => {
+export const Journal = forwardRef<{ loadEntries: () => void }>((props, ref) => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [newEntry, setNewEntry] = useState('');
   const [selectedMood, setSelectedMood] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { refreshAllData } = useDataRefresh();
 
   const moods = [
     { emoji: '😊', label: 'Happy' },
@@ -33,6 +35,10 @@ export const Journal = () => {
   useEffect(() => {
     loadEntries();
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    loadEntries
+  }));
 
   const loadEntries = async () => {
     setLoading(true);
@@ -204,4 +210,4 @@ export const Journal = () => {
       </div>
     </div>
   );
-};
+});

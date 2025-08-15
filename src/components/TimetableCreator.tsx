@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, Plus, Trash2, CheckCircle2, Bell, BellOff } from 'lucide-react';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { useToast } from '@/hooks/use-toast';
+import { useDataRefresh } from '@/contexts/DataRefreshContext';
 
 interface TimeSlot {
   id: string;
@@ -16,7 +17,7 @@ interface TimeSlot {
   completed?: boolean;
 }
 
-export const TimetableCreator = () => {
+export const TimetableCreator = forwardRef<{ loadTimeSlots: () => void }>((props, ref) => {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [hour, setHour] = useState('');
   const [minute, setMinute] = useState('');
@@ -25,11 +26,16 @@ export const TimetableCreator = () => {
   const [loading, setLoading] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { toast } = useToast();
+  const { refreshAllData } = useDataRefresh();
 
   useEffect(() => {
     loadTimeSlots();
     checkNotificationPermissions();
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    loadTimeSlots
+  }));
 
   const checkNotificationPermissions = async () => {
     try {
@@ -428,4 +434,4 @@ export const TimetableCreator = () => {
       </div>
     </div>
   );
-};
+});

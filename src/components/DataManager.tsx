@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Download, Upload, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRef } from 'react';
+import { useDataRefresh } from '@/contexts/DataRefreshContext';
 
 export const DataManager = () => {
   const { toast } = useToast();
+  const { refreshAllData } = useDataRefresh();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const exportData = () => {
@@ -69,11 +71,11 @@ export const DataManager = () => {
 
         toast({
           title: "Data imported successfully",
-          description: "Your data has been restored. Please refresh the page to see changes.",
+          description: "Your data has been restored and all components have been refreshed.",
         });
 
-        // Refresh the page to load new data
-        setTimeout(() => window.location.reload(), 2000);
+        // Trigger data refresh across all components
+        refreshAllData();
       } catch (error) {
         toast({
           title: "Import failed",

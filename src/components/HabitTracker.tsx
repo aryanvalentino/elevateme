@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Plus, Trash2, Target, Flame } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useDataRefresh } from '@/contexts/DataRefreshContext';
 
 interface Habit {
   id: string;
@@ -15,15 +16,20 @@ interface Habit {
   last_completed?: string;
 }
 
-export const HabitTracker = () => {
+export const HabitTracker = forwardRef<{ loadHabits: () => void }>((props, ref) => {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [newHabitName, setNewHabitName] = useState('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { refreshAllData } = useDataRefresh();
 
   useEffect(() => {
     loadHabits();
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    loadHabits
+  }));
 
   const loadHabits = async () => {
     setLoading(true);
@@ -270,4 +276,4 @@ export const HabitTracker = () => {
       </div>
     </div>
   );
-};
+});
