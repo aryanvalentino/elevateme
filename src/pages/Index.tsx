@@ -16,14 +16,14 @@ const Index = () => {
       <header className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-4xl font-bold text-foreground">ElevateMe</h1>
-            <Calendar className="h-8 w-8 text-primary" />
+            <h1 className="text-4xl font-bold text-white">ElevateMe</h1>
+            <Calendar className="h-8 w-8 text-white" />
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
           </div>
         </div>
-        <p className="text-xl mt-2 text-muted-foreground">Track habits • Schedule time • Reflect daily</p>
+        <p className="text-xl mt-2 text-white/80">Track habits • Schedule time • Reflect daily</p>
       </header>
 
       <main className="container mx-auto p-6">
