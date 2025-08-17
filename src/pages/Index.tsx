@@ -25,7 +25,7 @@ const Index = () => {
   return (
     <DataRefreshProvider onRefresh={handleDataRefresh}>
       <div className="min-h-screen bg-background">
-        <header className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-6">
+        <header className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground pt-12 pb-6 px-6 safe-area-inset-top">
           <div className="flex items-center justify-between">
             <div className="flex-1 text-center">
               <h1 className="text-2xl font-bold text-white">ElevateMe</h1>
