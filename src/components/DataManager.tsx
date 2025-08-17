@@ -4,19 +4,22 @@ import { Download, Upload, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRef } from 'react';
 import { useDataRefresh } from '@/contexts/DataRefreshContext';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 export const DataManager = () => {
   const { toast } = useToast();
   const { refreshAllData } = useDataRefresh();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const exportData = () => {
+  const exportData = async () => {
     try {
       const habits = JSON.parse(localStorage.getItem('habits') || '[]');
       const journalEntries = JSON.parse(localStorage.getItem('journal_entries') || '[]');
       const timeSlots = JSON.parse(localStorage.getItem('time_slots') || '[]');
 
-      const exportData = {
+      const exportPayload = {
         habits,
         journalEntries,
         timeSlots,
@@ -24,27 +27,51 @@ export const DataManager = () => {
         version: '1.0'
       };
 
-      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataStr = JSON.stringify(exportPayload, null, 2);
+      const fileName = `elevateme-data-${new Date().toISOString().split('T')[0]}.json`;
+
+      if (Capacitor.getPlatform() !== 'web') {
+        const { uri } = await Filesystem.writeFile({
+          path: fileName,
+          data: dataStr,
+          directory: Directory.Documents,
+          encoding: Encoding.UTF8,
+          recursive: true,
+        });
+
+        await Share.share({
+          title: 'Data exported successfully',
+          text: 'Your ElevateMe data file has been saved. You can share or save it.',
+          url: uri,
+          dialogTitle: 'Share your data file',
+        });
+
+        toast({
+          title: 'Data exported',
+          description: 'Shared via Android share sheet.',
+        });
+        return;
+      }
+
       const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      
       const url = URL.createObjectURL(dataBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `elevateme-data-${new Date().toISOString().split('T')[0]}.txt`;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
       toast({
-        title: "Data exported successfully",
-        description: "Your data has been saved to a text file",
+        title: 'Data exported successfully',
+        description: 'Your data has been saved to a text file',
       });
     } catch (error) {
       toast({
-        title: "Export failed",
-        description: "There was an error exporting your data",
-        variant: "destructive",
+        title: 'Export failed',
+        description: 'There was an error exporting your data',
+        variant: 'destructive',
       });
     }
   };
