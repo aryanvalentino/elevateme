@@ -8,6 +8,7 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
+
 export const DataManager = () => {
   const { toast } = useToast();
   const { refreshAllData } = useDataRefresh();
@@ -31,24 +32,43 @@ export const DataManager = () => {
       const fileName = `elevateme-data-${new Date().toISOString().split('T')[0]}.json`;
 
       if (Capacitor.getPlatform() !== 'web') {
-        const { uri } = await Filesystem.writeFile({
-          path: fileName,
+        // Create temporary file first
+        const tempFileName = `temp_${fileName}`;
+        await Filesystem.writeFile({
+          path: tempFileName,
           data: dataStr,
-          directory: Directory.Documents,
+          directory: Directory.Cache,
           encoding: Encoding.UTF8,
-          recursive: true,
+        });
+
+        // Use Share API to let user choose where to save
+        const tempFileUri = await Filesystem.getUri({
+          directory: Directory.Cache,
+          path: tempFileName
         });
 
         await Share.share({
-          title: 'Data exported successfully',
-          text: 'Your ElevateMe data file has been saved. You can share or save it.',
-          url: uri,
-          dialogTitle: 'Share your data file',
+          title: 'Save ElevateMe Data',
+          text: 'Choose where to save your ElevateMe data file',
+          url: tempFileUri.uri,
+          dialogTitle: 'Save data file'
         });
 
+        // Clean up temp file after a delay
+        setTimeout(async () => {
+          try {
+            await Filesystem.deleteFile({
+              path: tempFileName,
+              directory: Directory.Cache
+            });
+          } catch (e) {
+            // Ignore cleanup errors
+          }
+        }, 5000);
+
         toast({
-          title: 'Data exported',
-          description: 'Shared via Android share sheet.',
+          title: 'Data export initiated',
+          description: 'Choose your save location from the share menu',
         });
         return;
       }
