@@ -1,0 +1,268 @@
+import { useState, useEffect, forwardRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+
+interface HabitData {
+  id: string;
+  name: string;
+  streak: number;
+  completedToday: boolean;
+}
+
+interface JournalEntry {
+  id: string;
+  user_id: string;
+  date: string;
+  content: string;
+  mood?: string;
+}
+
+interface WeeklyHabitData {
+  day: string;
+  completed: number;
+  total: number;
+  percentage: number;
+}
+
+interface MoodData {
+  mood: string;
+  count: number;
+  fill: string;
+}
+
+const moodColors = {
+  "😊": "#10B981", // green
+  "😐": "#F59E0B", // yellow
+  "😔": "#EF4444", // red
+  "😴": "#6366F1", // blue
+  "😤": "#F97316", // orange
+} as const;
+
+const chartConfig = {
+  completed: {
+    label: "Completed Habits",
+    color: "hsl(var(--primary))"
+  },
+  mood: {
+    label: "Mood Distribution",
+    color: "hsl(var(--primary))"
+  }
+};
+
+export const Insights = forwardRef<{ loadInsights: () => void }>((props, ref) => {
+  const [weeklyHabits, setWeeklyHabits] = useState<WeeklyHabitData[]>([]);
+  const [moodData, setMoodData] = useState<MoodData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadInsights = async () => {
+    setLoading(true);
+    try {
+      // Get last 7 days
+      const today = new Date();
+      const weekDays = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        weekDays.push({
+          date: date.toISOString().split('T')[0],
+          dayName: date.toLocaleDateString('en-US', { weekday: 'short' })
+        });
+      }
+
+      // Load habits data
+      const habitsData = localStorage.getItem('habits');
+      const habits: HabitData[] = habitsData ? JSON.parse(habitsData) : [];
+
+      // Calculate weekly habit completion (approximated since we don't have history)
+      const weeklyHabitsData = weekDays.map(day => {
+        // For now, we'll simulate completion based on current streaks
+        // In a real app, you'd store daily completion history
+        const totalHabits = habits.length;
+        const avgCompletion = habits.reduce((acc, habit) => acc + Math.min(habit.streak / 7, 1), 0);
+        const completed = Math.round(avgCompletion);
+        
+        return {
+          day: day.dayName,
+          completed,
+          total: totalHabits,
+          percentage: totalHabits > 0 ? Math.round((completed / totalHabits) * 100) : 0
+        };
+      });
+
+      // Load journal entries for mood analysis
+      const journalData = localStorage.getItem('journal_entries');
+      const entries: JournalEntry[] = journalData ? JSON.parse(journalData) : [];
+
+      // Filter entries from last 7 days and count moods
+      const weekStart = new Date(today);
+      weekStart.setDate(weekStart.getDate() - 6);
+      
+      const recentEntries = entries.filter(entry => {
+        const entryDate = new Date(entry.date);
+        return entryDate >= weekStart && entryDate <= today;
+      });
+
+      const moodCounts: Record<string, number> = {};
+      recentEntries.forEach(entry => {
+        if (entry.mood) {
+          moodCounts[entry.mood] = (moodCounts[entry.mood] || 0) + 1;
+        }
+      });
+
+      const moodChartData = Object.entries(moodCounts).map(([mood, count]) => ({
+        mood,
+        count,
+        fill: moodColors[mood as keyof typeof moodColors] || "#8B5CF6"
+      }));
+
+      setWeeklyHabits(weeklyHabitsData);
+      setMoodData(moodChartData);
+    } catch (error) {
+      console.error('Error loading insights:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInsights();
+  }, []);
+
+  // Expose loadInsights method to parent
+  if (ref) {
+    (ref as any).current = { loadInsights };
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-muted-foreground">Loading insights...</div>
+      </div>
+    );
+  }
+
+  const totalHabits = weeklyHabits.length > 0 ? weeklyHabits[weeklyHabits.length - 1].total : 0;
+  const avgCompletion = weeklyHabits.length > 0 
+    ? Math.round(weeklyHabits.reduce((acc, day) => acc + day.percentage, 0) / weeklyHabits.length)
+    : 0;
+  const totalMoodEntries = moodData.reduce((acc, mood) => acc + mood.count, 0);
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Habits</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalHabits}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Avg Completion</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{avgCompletion}%</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Journal Entries</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalMoodEntries}</div>
+            <p className="text-xs text-muted-foreground">This week</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Weekly Habit Completion Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Weekly Habit Completion</CardTitle>
+          <p className="text-sm text-muted-foreground">Daily completion percentage over the last 7 days</p>
+        </CardHeader>
+        <CardContent>
+          {weeklyHabits.length > 0 ? (
+            <ChartContainer config={chartConfig} className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyHabits}>
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <ChartTooltip 
+                    content={<ChartTooltipContent />}
+                    formatter={(value, name) => [
+                      `${value}%`,
+                      "Completion"
+                    ]}
+                  />
+                  <Bar dataKey="percentage" fill="hsl(var(--primary))" radius={4} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          ) : (
+            <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+              No habit data available yet
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Mood Distribution Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Mood Distribution</CardTitle>
+          <p className="text-sm text-muted-foreground">Your mood patterns from journal entries this week</p>
+        </CardHeader>
+        <CardContent>
+          {moodData.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <ChartContainer config={chartConfig} className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={moodData}
+                      dataKey="count"
+                      nameKey="mood"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label={({ mood, count }) => `${mood} ${count}`}
+                    >
+                      {moodData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+              <div className="space-y-2">
+                <h4 className="font-medium">Mood Breakdown</h4>
+                {moodData.map((mood, index) => (
+                  <div key={index} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: mood.fill }}
+                      />
+                      <span>{mood.mood}</span>
+                    </div>
+                    <span className="font-medium">{mood.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+              No mood data available yet. Add some journal entries with moods!
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+});

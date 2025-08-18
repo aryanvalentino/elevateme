@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { HabitTracker } from "@/components/HabitTracker";
 import { TimetableCreator } from "@/components/TimetableCreator";
 import { Journal } from "@/components/Journal";
+import { Insights } from "@/components/Insights";
 import { DataRefreshProvider } from "@/contexts/DataRefreshContext";
 
 const Index = () => {
@@ -12,12 +13,14 @@ const Index = () => {
   const habitTrackerRef = useRef<{ loadHabits: () => void }>(null);
   const journalRef = useRef<{ loadEntries: () => void }>(null);
   const timetableRef = useRef<{ loadTimeSlots: () => void }>(null);
+  const insightsRef = useRef<{ loadInsights: () => void }>(null);
 
   const handleDataRefresh = useCallback(() => {
     // Trigger reload for all components
     habitTrackerRef.current?.loadHabits();
     journalRef.current?.loadEntries();
     timetableRef.current?.loadTimeSlots();
+    insightsRef.current?.loadInsights();
   }, []);
 
   return (
@@ -37,7 +40,7 @@ const Index = () => {
 
         <main className="container mx-auto p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="habits">
                 Habits
               </TabsTrigger>
@@ -46,6 +49,9 @@ const Index = () => {
               </TabsTrigger>
               <TabsTrigger value="journal">
                 Journal
+              </TabsTrigger>
+              <TabsTrigger value="insights">
+                Insights
               </TabsTrigger>
             </TabsList>
 
@@ -71,6 +77,14 @@ const Index = () => {
                 <p className="text-muted-foreground">Reflect on your day, capture thoughts, and track your mood and progress.</p>
               </div>
               <Journal ref={journalRef} />
+            </TabsContent>
+
+            <TabsContent value="insights" className="space-y-6">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold mb-2">Weekly Insights</h2>
+                <p className="text-muted-foreground">Visualize your progress with habit completion rates and mood trends.</p>
+              </div>
+              <Insights ref={insightsRef} />
             </TabsContent>
           </Tabs>
         </main>
