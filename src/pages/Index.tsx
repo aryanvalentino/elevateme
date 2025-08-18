@@ -5,9 +5,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { HabitTracker } from "@/components/HabitTracker";
 import { TimetableCreator } from "@/components/TimetableCreator";
 import { Journal } from "@/components/Journal";
-import { DataManager } from "@/components/DataManager";
 import { DataRefreshProvider } from "@/contexts/DataRefreshContext";
-import { Calendar, Target, Clock, BookOpen } from "lucide-react";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("habits");
@@ -38,32 +36,22 @@ const Index = () => {
         </header>
 
         <main className="container mx-auto p-6">
-          <div className="mb-6">
-            <DataManager />
-          </div>
-          
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="habits" className="flex items-center gap-2">
-                <Target className="h-4 w-4" />
+              <TabsTrigger value="habits">
                 Habits
               </TabsTrigger>
-              <TabsTrigger value="timetable" className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
+              <TabsTrigger value="timetable">
                 Timetable
               </TabsTrigger>
-              <TabsTrigger value="journal" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
+              <TabsTrigger value="journal">
                 Journal
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="habits" className="space-y-6">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
-                  <Target className="h-6 w-6 text-primary" />
-                  Habit Tracker
-                </h2>
+                <h2 className="text-2xl font-bold mb-2">Habit Tracker</h2>
                 <p className="text-muted-foreground">Build positive habits and track your daily progress with streak counters.</p>
               </div>
               <HabitTracker ref={habitTrackerRef} />
@@ -71,10 +59,7 @@ const Index = () => {
 
             <TabsContent value="timetable" className="space-y-6">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
-                  <Clock className="h-6 w-6 text-primary" />
-                  Daily Timetable
-                </h2>
+                <h2 className="text-2xl font-bold mb-2">Daily Timetable</h2>
                 <p className="text-muted-foreground">Create and manage your daily schedule with custom time slots and activities.</p>
               </div>
               <TimetableCreator ref={timetableRef} />
@@ -82,10 +67,7 @@ const Index = () => {
 
             <TabsContent value="journal" className="space-y-6">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
-                  <BookOpen className="h-6 w-6 text-primary" />
-                  Personal Journal
-                </h2>
+                <h2 className="text-2xl font-bold mb-2">Personal Journal</h2>
                 <p className="text-muted-foreground">Reflect on your day, capture thoughts, and track your mood and progress.</p>
               </div>
               <Journal ref={journalRef} />
