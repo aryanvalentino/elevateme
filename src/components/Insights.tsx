@@ -58,12 +58,15 @@ export const Insights = forwardRef<{ loadInsights: () => void }>((props, ref) =>
   const loadInsights = async () => {
     setLoading(true);
     try {
-      // Get last 7 days
+      // Get last 7 days starting from Monday
       const today = new Date();
+      const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const mondayOffset = currentDay === 0 ? 6 : currentDay - 1; // Days since last Monday
+      
       const weekDays = [];
-      for (let i = 6; i >= 0; i--) {
+      for (let i = 0; i < 7; i++) {
         const date = new Date(today);
-        date.setDate(date.getDate() - i);
+        date.setDate(date.getDate() - mondayOffset + i);
         weekDays.push({
           date: date.toISOString().split('T')[0],
           dayName: date.toLocaleDateString('en-US', { weekday: 'short' })
@@ -185,26 +188,49 @@ export const Insights = forwardRef<{ loadInsights: () => void }>((props, ref) =>
           <CardTitle>Weekly Habit Completion</CardTitle>
           <p className="text-sm text-muted-foreground">Daily completion percentage over the last 7 days</p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-2 sm:px-6">
           {weeklyHabits.length > 0 ? (
-            <ChartContainer config={chartConfig} className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyHabits}>
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <ChartTooltip 
-                    content={<ChartTooltipContent />}
-                    formatter={(value, name) => [
-                      `${value}%`,
-                      "Completion"
-                    ]}
-                  />
-                  <Bar dataKey="percentage" fill="hsl(var(--primary))" radius={4} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            <div className="w-full">
+              <ChartContainer 
+                config={chartConfig} 
+                className={`w-full ${totalHabits > 4 ? 'h-[280px]' : 'h-[220px]'} min-h-[200px]`}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={weeklyHabits}
+                    margin={{ top: 20, right: 10, left: 10, bottom: 20 }}
+                  >
+                    <XAxis 
+                      dataKey="day" 
+                      tick={{ fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                      domain={[0, 100]}
+                    />
+                    <ChartTooltip 
+                      content={<ChartTooltipContent />}
+                      formatter={(value, name) => [
+                        `${value}%`,
+                        "Completion"
+                      ]}
+                    />
+                    <Bar 
+                      dataKey="percentage" 
+                      fill="hsl(var(--primary))" 
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={60}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           ) : (
-            <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+            <div className={`${totalHabits > 4 ? 'h-[280px]' : 'h-[220px]'} flex items-center justify-center text-muted-foreground`}>
               No habit data available yet
             </div>
           )}
