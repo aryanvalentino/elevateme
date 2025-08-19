@@ -132,6 +132,28 @@ export const Insights = forwardRef<{ loadInsights: () => void }>((props, ref) =>
     loadInsights();
   }, []);
 
+  // Set up midnight timer to refresh data when day changes
+  useEffect(() => {
+    const setupMidnightTimer = () => {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      const msUntilMidnight = tomorrow.getTime() - now.getTime();
+      
+      const timer = setTimeout(() => {
+        loadInsights(); // Refresh data at midnight
+        setupMidnightTimer(); // Set up next day's timer
+      }, msUntilMidnight);
+      
+      return timer;
+    };
+    
+    const timer = setupMidnightTimer();
+    return () => clearTimeout(timer);
+  }, []);
+
   // Expose loadInsights method to parent
   if (ref) {
     (ref as any).current = { loadInsights };

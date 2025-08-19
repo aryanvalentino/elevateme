@@ -138,6 +138,9 @@ export const HabitTracker = forwardRef<{ loadHabits: () => void }>((props, ref) 
         );
         localStorage.setItem('habits', JSON.stringify(updatedHabits));
         setHabits(updatedHabits);
+        
+        // Trigger insights refresh
+        refreshAllData();
       }
 
       toast({
