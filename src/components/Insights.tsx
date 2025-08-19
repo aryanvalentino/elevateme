@@ -210,17 +210,17 @@ export const Insights = forwardRef<{ loadInsights: () => void }>((props, ref) =>
                       tick={{ fontSize: 12 }}
                       axisLine={false}
                       tickLine={false}
-                      domain={[0, 100]}
+                      domain={[0, 6]}
                     />
                     <ChartTooltip 
                       content={<ChartTooltipContent />}
                       formatter={(value, name) => [
-                        `${value}%`,
-                        "Completion"
+                        `${value}`,
+                        "Habits Completed"
                       ]}
                     />
                     <Bar 
-                      dataKey="percentage" 
+                      dataKey="completed" 
                       fill="hsl(var(--primary))" 
                       radius={[4, 4, 0, 0]}
                       maxBarSize={60}
