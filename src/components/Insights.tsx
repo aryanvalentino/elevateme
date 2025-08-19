@@ -210,7 +210,7 @@ export const Insights = forwardRef<{ loadInsights: () => void }>((props, ref) =>
                       tick={{ fontSize: 12 }}
                       axisLine={false}
                       tickLine={false}
-                      domain={[0, 6]}
+                      domain={[0, Math.max(totalHabits, 1)]}
                     />
                     <ChartTooltip 
                       content={<ChartTooltipContent />}
