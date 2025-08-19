@@ -7,7 +7,8 @@ interface HabitData {
   id: string;
   name: string;
   streak: number;
-  completedToday: boolean;
+  completed_today: boolean;
+  last_completed?: string;
 }
 
 interface JournalEntry {
@@ -77,19 +78,59 @@ export const Insights = forwardRef<{ loadInsights: () => void }>((props, ref) =>
       const habitsData = localStorage.getItem('habits');
       const habits: HabitData[] = habitsData ? JSON.parse(habitsData) : [];
 
-      // Calculate weekly habit completion (approximated since we don't have history)
-      const weeklyHabitsData = weekDays.map(day => {
-        // For now, we'll simulate completion based on current streaks
-        // In a real app, you'd store daily completion history
-        const totalHabits = habits.length;
-        const avgCompletion = habits.reduce((acc, habit) => acc + Math.min(habit.streak / 7, 1), 0);
-        const completed = Math.round(avgCompletion);
-        
+      // Determine current week range (Mon - Sun)
+      const mondayDate = new Date(weekDays[0].date);
+      const sundayDate = new Date(weekDays[6].date);
+      sundayDate.setHours(23,59,59,999);
+
+      // Initialize completion counts per day (index 0..6 for Mon..Sun)
+      const completedCounts = Array(7).fill(0) as number[];
+      const totalHabits = habits.length;
+
+      const todayDateOnly = new Date();
+      todayDateOnly.setHours(0,0,0,0);
+
+      habits.forEach((habit) => {
+        let streak = habit.streak || 0;
+        let lastCompletedDate: Date | undefined = habit.last_completed ? new Date(habit.last_completed) : undefined;
+
+        // Handle cases where UI state might be toggled today
+        const lastIsToday = lastCompletedDate && lastCompletedDate.toDateString() === todayDateOnly.toDateString();
+        if (habit.completed_today) {
+          // Ensure at least today counts once
+          if (!lastIsToday) {
+            lastCompletedDate = new Date(todayDateOnly);
+            streak = Math.max(streak, 1);
+          }
+        } else if (lastIsToday) {
+          // If unchecked today, move the last completion to yesterday and reduce streak
+          lastCompletedDate = new Date(todayDateOnly);
+          lastCompletedDate.setDate(lastCompletedDate.getDate() - 1);
+          streak = Math.max(streak - 1, 0);
+        }
+
+        if (!lastCompletedDate || streak <= 0) return;
+
+        for (let k = 0; k < streak; k++) {
+          const d = new Date(lastCompletedDate);
+          d.setDate(d.getDate() - k);
+          d.setHours(12,0,0,0); // normalize
+          if (d >= mondayDate && d <= sundayDate) {
+            const dayIndex = Math.floor((d.getTime() - new Date(mondayDate).setHours(12,0,0,0)) / (1000*60*60*24));
+            if (dayIndex >= 0 && dayIndex < 7) {
+              completedCounts[dayIndex] += 1;
+            }
+          }
+        }
+      });
+
+      const weeklyHabitsData = weekDays.map((day, idx) => {
+        const completed = completedCounts[idx] || 0;
         return {
           day: day.dayName,
           completed,
           total: totalHabits,
-          percentage: totalHabits > 0 ? Math.round((completed / totalHabits) * 100) : 0
+          percentage: totalHabits > 0 ? Math.round((completed / totalHabits) * 100) : 0,
         };
       });
 
@@ -208,7 +249,7 @@ export const Insights = forwardRef<{ loadInsights: () => void }>((props, ref) =>
       <Card>
         <CardHeader>
           <CardTitle>Weekly Habit Completion</CardTitle>
-          <p className="text-sm text-muted-foreground">Daily completion percentage over the last 7 days</p>
+          <p className="text-sm text-muted-foreground">Habits completed each day (Mon–Sun)</p>
         </CardHeader>
         <CardContent className="px-2 sm:px-6">
           {weeklyHabits.length > 0 ? (
