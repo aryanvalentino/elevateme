@@ -8,10 +8,10 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 225 25% 97%;
+    --background: 225 25% 94%;
     --foreground: 225 15% 15%;
 
-    --card: 0 0% 100%;
+    --card: 225 25% 94%;
     --card-foreground: 225 15% 15%;
 
     --popover: 0 0% 100%;
@@ -42,12 +42,12 @@ All colors MUST be HSL.
     --gradient-success: linear-gradient(135deg, hsl(142 71% 45%), hsl(120 100% 40%));
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(225 25% 98%));
     
-    /* Neumorphism Shadows and Glows */
-    --shadow-neomorphism: 9px 9px 16px hsl(225 25% 85%), -9px -9px 16px hsl(225 25% 100%);
-    --shadow-neomorphism-inset: inset 9px 9px 16px hsl(225 25% 85%), inset -9px -9px 16px hsl(225 25% 100%);
-    --shadow-neomorphism-pressed: inset 6px 6px 12px hsl(225 25% 85%), inset -6px -6px 12px hsl(225 25% 100%);
-    --shadow-neomorphism-small: 4px 4px 8px hsl(225 25% 88%), -4px -4px 8px hsl(225 25% 98%);
-    --shadow-neomorphism-button: 6px 6px 12px hsl(225 25% 87%), -6px -6px 12px hsl(225 25% 100%);
+    /* Enhanced Neumorphism Shadows and Glows */
+    --shadow-neomorphism: 15px 15px 30px hsl(225 25% 82%), -15px -15px 30px hsl(225 25% 100%);
+    --shadow-neomorphism-inset: inset 12px 12px 24px hsl(225 25% 82%), inset -12px -12px 24px hsl(225 25% 100%);
+    --shadow-neomorphism-pressed: inset 8px 8px 16px hsl(225 25% 80%), inset -8px -8px 16px hsl(225 25% 98%);
+    --shadow-neomorphism-small: 6px 6px 12px hsl(225 25% 85%), -6px -6px 12px hsl(225 25% 98%);
+    --shadow-neomorphism-button: 10px 10px 20px hsl(225 25% 84%), -10px -10px 20px hsl(225 25% 100%);
     --shadow-drop: 0 10px 40px hsl(225 25% 0% / 0.15);
     --glow-text: 0 0 20px hsl(250 84% 54% / 0.3);
     --glow-bright: 0 0 30px hsl(250 84% 54% / 0.4);
@@ -79,7 +79,7 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 225 25% 6%;
+    --background: 225 25% 8%;
     --foreground: 225 15% 85%;
 
     --card: 225 25% 8%;
@@ -113,12 +113,12 @@ All colors MUST be HSL.
     --gradient-success: linear-gradient(135deg, hsl(142 71% 50%), hsl(120 100% 45%));
     --gradient-card: linear-gradient(145deg, hsl(225 25% 8%), hsl(225 25% 10%));
     
-    /* Dark Neumorphism Shadows and Glows */
-    --shadow-neomorphism: 9px 9px 16px hsl(225 25% 3%), -9px -9px 16px hsl(225 25% 12%);
-    --shadow-neomorphism-inset: inset 9px 9px 16px hsl(225 25% 3%), inset -9px -9px 16px hsl(225 25% 12%);
-    --shadow-neomorphism-pressed: inset 6px 6px 12px hsl(225 25% 3%), inset -6px -6px 12px hsl(225 25% 12%);
-    --shadow-neomorphism-small: 4px 4px 8px hsl(225 25% 4%), -4px -4px 8px hsl(225 25% 10%);
-    --shadow-neomorphism-button: 6px 6px 12px hsl(225 25% 4%), -6px -6px 12px hsl(225 25% 11%);
+    /* Enhanced Dark Neumorphism Shadows and Glows */
+    --shadow-neomorphism: 15px 15px 30px hsl(225 25% 2%), -15px -15px 30px hsl(225 25% 16%);
+    --shadow-neomorphism-inset: inset 12px 12px 24px hsl(225 25% 2%), inset -12px -12px 24px hsl(225 25% 16%);
+    --shadow-neomorphism-pressed: inset 8px 8px 16px hsl(225 25% 3%), inset -8px -8px 16px hsl(225 25% 14%);
+    --shadow-neomorphism-small: 6px 6px 12px hsl(225 25% 4%), -6px -6px 12px hsl(225 25% 14%);
+    --shadow-neomorphism-button: 10px 10px 20px hsl(225 25% 3%), -10px -10px 20px hsl(225 25% 15%);
     --shadow-drop: 0 10px 40px hsl(225 25% 0% / 0.4);
     --glow-text: 0 0 20px hsl(250 84% 60% / 0.4);
     --glow-bright: 0 0 30px hsl(250 84% 60% / 0.5);
