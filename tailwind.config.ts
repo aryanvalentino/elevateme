@@ -90,7 +90,13 @@ export default {
 				'floating': 'var(--shadow-floating)',
 				'card-shadow': 'var(--shadow-card)',
 				'button': 'var(--shadow-button)',
-				'input': 'var(--shadow-input)'
+				'input': 'var(--shadow-input)',
+				'drop': 'var(--shadow-drop)',
+				'text-glow': 'var(--glow-text)',
+				'bright-glow': 'var(--glow-bright)'
+			},
+			fontFamily: {
+				'sans': ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
 			},
 			keyframes: {
 				'accordion-down': {
