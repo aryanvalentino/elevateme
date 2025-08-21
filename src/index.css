@@ -42,9 +42,12 @@ All colors MUST be HSL.
     --gradient-success: linear-gradient(135deg, hsl(142 71% 45%), hsl(120 100% 40%));
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(225 25% 98%));
     
-    /* Shadows */
-    --shadow-elevation: 0 4px 20px hsl(250 84% 54% / 0.15);
-    --shadow-card: 0 2px 10px hsl(225 25% 25% / 0.08);
+    /* Bubble-style Shadows */
+    --shadow-bubble: 0 8px 32px hsl(225 25% 25% / 0.12);
+    --shadow-floating: 0 4px 24px hsl(250 84% 54% / 0.15);
+    --shadow-card: 0 6px 28px hsl(225 25% 25% / 0.1);
+    --shadow-button: 0 4px 16px hsl(250 84% 54% / 0.2);
+    --shadow-input: 0 2px 12px hsl(225 25% 25% / 0.08);
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -107,9 +110,12 @@ All colors MUST be HSL.
     --gradient-success: linear-gradient(135deg, hsl(142 71% 50%), hsl(120 100% 45%));
     --gradient-card: linear-gradient(145deg, hsl(225 25% 8%), hsl(225 25% 10%));
     
-    /* Dark Shadows */
-    --shadow-elevation: 0 4px 20px hsl(250 84% 60% / 0.25);
-    --shadow-card: 0 2px 10px hsl(225 25% 0% / 0.2);
+    /* Dark Bubble-style Shadows */
+    --shadow-bubble: 0 8px 32px hsl(225 25% 0% / 0.3);
+    --shadow-floating: 0 4px 24px hsl(250 84% 60% / 0.25);
+    --shadow-card: 0 6px 28px hsl(225 25% 0% / 0.25);
+    --shadow-button: 0 4px 16px hsl(250 84% 60% / 0.3);
+    --shadow-input: 0 2px 12px hsl(225 25% 0% / 0.2);
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;

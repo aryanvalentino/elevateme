@@ -86,8 +86,11 @@ export default {
 				'gradient-card': 'var(--gradient-card)'
 			},
 			boxShadow: {
-				'elevation': 'var(--shadow-elevation)',
-				'card-shadow': 'var(--shadow-card)'
+				'bubble': 'var(--shadow-bubble)',
+				'floating': 'var(--shadow-floating)',
+				'card-shadow': 'var(--shadow-card)',
+				'button': 'var(--shadow-button)',
+				'input': 'var(--shadow-input)'
 			},
 			keyframes: {
 				'accordion-down': {
