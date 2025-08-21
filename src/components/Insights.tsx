@@ -251,7 +251,7 @@ export const Insights = forwardRef<{ loadInsights: () => void }>((props, ref) =>
           <CardTitle>Weekly Habit Completion</CardTitle>
           <p className="text-sm text-muted-foreground">Habits completed each day (Mon–Sun)</p>
         </CardHeader>
-        <CardContent className="px-2 sm:px-6">
+        <CardContent className="pl-2 pr-2 sm:pl-6 sm:pr-6">
           {weeklyHabits.length > 0 ? (
             <div className="w-full">
               <ChartContainer 
@@ -261,7 +261,7 @@ export const Insights = forwardRef<{ loadInsights: () => void }>((props, ref) =>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart 
                     data={weeklyHabits}
-                    margin={{ top: 20, right: 10, left: 10, bottom: 20 }}
+                    margin={{ top: 20, right: 10, left: -10, bottom: 20 }}
                   >
                     <XAxis 
                       dataKey="day" 
