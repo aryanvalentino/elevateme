@@ -86,11 +86,11 @@ export default {
 				'gradient-card': 'var(--gradient-card)'
 			},
 			boxShadow: {
-				'bubble': 'var(--shadow-bubble)',
-				'floating': 'var(--shadow-floating)',
-				'card-shadow': 'var(--shadow-card)',
-				'button': 'var(--shadow-button)',
-				'input': 'var(--shadow-input)',
+				'neomorphism': 'var(--shadow-neomorphism)',
+				'neomorphism-inset': 'var(--shadow-neomorphism-inset)',
+				'neomorphism-pressed': 'var(--shadow-neomorphism-pressed)',
+				'neomorphism-small': 'var(--shadow-neomorphism-small)',
+				'neomorphism-button': 'var(--shadow-neomorphism-button)',
 				'drop': 'var(--shadow-drop)',
 				'text-glow': 'var(--glow-text)',
 				'bright-glow': 'var(--glow-bright)'

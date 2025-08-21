@@ -9,13 +9,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-button",
+        default: "bg-background text-primary shadow-neomorphism-button hover:shadow-neomorphism-pressed active:shadow-neomorphism-inset transition-all duration-200",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-button",
+          "bg-background text-destructive shadow-neomorphism-button hover:shadow-neomorphism-pressed active:shadow-neomorphism-inset transition-all duration-200",
         outline:
-          "bg-background hover:bg-accent hover:text-accent-foreground shadow-floating",
+          "bg-background hover:bg-muted/50 shadow-neomorphism-small hover:shadow-neomorphism-pressed active:shadow-neomorphism-inset transition-all duration-200",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-button",
+          "bg-background text-secondary shadow-neomorphism-button hover:shadow-neomorphism-pressed active:shadow-neomorphism-inset transition-all duration-200",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
