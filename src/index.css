@@ -49,8 +49,8 @@ All colors MUST be HSL.
     --shadow-neomorphism-small: 6px 6px 12px hsl(225 25% 85%), -6px -6px 12px hsl(225 25% 98%);
     --shadow-neomorphism-button: 10px 10px 20px hsl(225 25% 84%), -10px -10px 20px hsl(225 25% 100%);
     --shadow-drop: 0 10px 40px hsl(225 25% 0% / 0.15);
-    --glow-text: 0 0 20px hsl(250 84% 54% / 0.3);
-    --glow-bright: 0 0 30px hsl(250 84% 54% / 0.4);
+    --glow-text: 0 0 8px hsl(250 84% 54% / 0.15);
+    --glow-bright: 0 0 14px hsl(250 84% 54% / 0.25);
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -120,8 +120,8 @@ All colors MUST be HSL.
     --shadow-neomorphism-small: 6px 6px 12px hsl(225 25% 4%), -6px -6px 12px hsl(225 25% 14%);
     --shadow-neomorphism-button: 10px 10px 20px hsl(225 25% 3%), -10px -10px 20px hsl(225 25% 15%);
     --shadow-drop: 0 10px 40px hsl(225 25% 0% / 0.4);
-    --glow-text: 0 0 20px hsl(250 84% 60% / 0.4);
-    --glow-bright: 0 0 30px hsl(250 84% 60% / 0.5);
+    --glow-text: 0 0 10px hsl(250 84% 60% / 0.18);
+    --glow-bright: 0 0 16px hsl(250 84% 60% / 0.28);
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
